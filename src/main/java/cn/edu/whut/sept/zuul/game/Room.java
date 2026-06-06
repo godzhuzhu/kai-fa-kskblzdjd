@@ -1,6 +1,7 @@
 package cn.edu.whut.sept.zuul.game;
 
 import cn.edu.whut.sept.zuul.game.item.AbstractItem;
+import cn.edu.whut.sept.zuul.game.item.Items;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -166,17 +167,14 @@ public class Room {
 
     /**
      * 随机生成 0~2 件物品到房间。
-     * <p>
-     * 依赖 Issue #4 的 {@code Items.generateRandomItem()}。
-     * 当 #4 合并后，取消内部注释即可生效。
-     * </p>
      */
     public void addRandomItems() {
-        int count = (int) (Math.random() * 3); // 0, 1, or 2
+        int count = (int) (Math.random() * 3);
         for (int i = 0; i < count; i++) {
-            // TODO: 当 #4 Items 系统合并后，取消下行注释
-            // AbstractItem item = Items.generateRandomItem();
-            // if (item != null) items.add(item);
+            AbstractItem item = Items.generateRandomItem();
+            if (item != null) {
+                items.add(item);
+            }
         }
     }
 

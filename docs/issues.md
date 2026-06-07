@@ -701,6 +701,165 @@ Room 之间相互引用会形成循环依赖，无法直接用 Gson 序列化。
 
 ---
 
+## deploy — 远程部署版
+
+---
+
+### #19 MySQL 替代 H2 持久化数据库
+
+**Assignee:** gmy
+**Milestone:** deploy
+**Labels:** enhancement
+
+```
+## 任务描述
+将 H2 内存数据库替换为 MySQL，实现数据持久化。
+
+## 子任务
+- [ ] pom.xml 添加 mysql-connector-j 依赖
+- [ ] 创建 application.yml 支持 dev/prod 多环境
+- [ ] dev 保留 H2，prod 使用 MySQL
+- [ ] 通过环境变量配置数据库连接信息
+- [ ] 保留 H2 console 在 dev 模式
+
+## 验收标准
+- dev 模式仍可用 H2 开发
+- prod 模式连接 MySQL 正常
+- JPA 自动建表
+```
+
+---
+
+### #20 Redis 会话 + PubSub 跨实例广播
+
+**Assignee:** gmy
+**Milestone:** deploy
+**Labels:** enhancement
+
+```
+## 任务描述
+引入 Redis 替代 JVM 内存 Map，支持多实例 WebSocket 广播。
+
+## 子任务
+- [ ] pom.xml 添加 spring-boot-starter-data-redis
+- [ ] 创建 RedisConfig 配置序列化
+- [ ] 创建 RedisSessionManager 管理玩家在线状态
+- [ ] 创建 RedisPubSubService 实现跨实例消息广播
+- [ ] GameWebSocketHandler 改为使用 RedisSessionManager
+- [ ] dev 模式保留 ConcurrentHashMap（兼容）
+- [ ] 房间状态推送通过 PubSub 频道广播
+
+## Redis 数据结构
+- session:{userId} Hash → 玩家会话信息
+- room:{roomName}:players Set → 房间玩家列表
+- channel:room:{roomName} PubSub → 房间消息广播
+
+## 验收标准
+- 多实例启动时间房间消息互通
+- 玩家上线/离线状态全局可见
+- 心跳超时自动清理 Redis 会话
+```
+
+---
+
+### #21 Docker + docker-compose 一键部署
+
+**Assignee:** gmy
+**Milestone:** deploy
+**Labels:** devops
+
+```
+## 任务描述
+编写 Dockerfile 和 docker-compose.yml，实现四服务一键启动。
+
+## 子任务
+- [ ] 编写 Dockerfile（JDK17 + Spring Boot JAR）
+- [ ] 编写 docker-compose.yml（app + mysql + redis + nginx）
+- [ ] 配置服务依赖和健康检查
+- [ ] MySQL 数据卷持久化
+- [ ] 环境变量注入（.env 文件）
+
+## 验收标准
+- docker-compose up -d 一键启动四个服务
+- 浏览器访问 localhost 正常使用
+- docker-compose down 后 MySQL 数据不丢失
+```
+
+---
+
+### #22 Nginx 反向代理 + 前端静态托管
+
+**Assignee:** gmy
+**Milestone:** deploy
+**Labels:** devops
+
+```
+## 任务描述
+配置 Nginx 统一入口，反向代理后端 API 和 WebSocket，托管前端静态文件。
+
+## 子任务
+- [ ] 编写 nginx.conf（80 端口统一入口）
+- [ ] / → 前端静态文件
+- [ ] /api/ → 代理 Spring Boot
+- [ ] /game/ → WebSocket Upgrade 代理
+- [ ] 编写 Dockerfile.nginx
+- [ ] 配置 CORS
+
+## 验收标准
+- 单端口 80 访问前端 + 后端 + WebSocket
+- WebSocket 连接和消息正常
+```
+
+---
+
+### #23 配置外部化 + 安全加固
+
+**Assignee:** gmy
+**Milestone:** deploy
+**Labels:** enhancement
+
+```
+## 任务描述
+敏感配置外部化，移除 Spring Security 自动生成密码，添加 CORS。
+
+## 子任务
+- [ ] 创建 .env 文件（不提交 Git）
+- [ ] .gitignore 添加 .env / docker-compose.override.yml
+- [ ] JWT Secret / DB 密码等从环境变量读取
+- [ ] 移除 Spring Security 自动生成的 UserDetailsService
+- [ ] 配置 CORS 白名单
+- [ ] 生产环境关闭 H2 Console
+
+## 验收标准
+- 密码不硬编码在代码中
+- 生产环境 CORS 正常
+```
+
+---
+
+### #24 CI/CD 构建 Docker 镜像
+
+**Assignee:** gmy
+**Milestone:** deploy
+**Labels:** devops
+
+```
+## 任务描述
+GitHub Actions 自动构建 Docker 镜像，打 tag 时推送镜像仓库。
+
+## 子任务
+- [ ] 创建 .github/workflows/docker.yml
+- [ ] 触发条件：push master + tag v*
+- [ ] 步骤：checkout → JDK17 → mvn package → docker build
+- [ ] 可选：推送镜像到 Docker Hub / GitHub Container Registry
+
+## 验收标准
+- Push 代码后 Actions 自动构建镜像
+- 打 tag 后镜像推送至仓库
+```
+
+---
+
 ## Issue 汇总表
 
 | 编号 | 标题 | 负责人 | 里程碑 |
@@ -723,3 +882,9 @@ Room 之间相互引用会形成循环依赖，无法直接用 Gson 序列化。
 | #16 | 配置 GitHub Actions CI | gmy | v1.0 |
 | #17 | 编写单元测试 | gmy | v2.0 |
 | #18 | 编写 README.md + REPORT.md | gmy | v3.0 |
+| #19 | MySQL 替代 H2 持久化数据库 | gmy | deploy |
+| #20 | Redis 会话 + PubSub 跨实例广播 | gmy | deploy |
+| #21 | Docker + docker-compose 一键部署 | gmy | deploy |
+| #22 | Nginx 反向代理 + 前端静态托管 | gmy | deploy |
+| #23 | 配置外部化 + 安全加固 | gmy | deploy |
+| #24 | CI/CD 构建 Docker 镜像 | gmy | deploy |

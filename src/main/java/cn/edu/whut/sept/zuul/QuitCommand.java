@@ -1,8 +1,10 @@
 package cn.edu.whut.sept.zuul;
 
+import cn.edu.whut.sept.zuul.game.Player;
+
 public class QuitCommand extends Command
 {
-    public boolean execute(Game game)
+    public boolean execute(Game game, Player player)
     {
         if(hasSecondWord()) {
             System.out.println("Quit what?");

@@ -1,9 +1,9 @@
 ﻿-- Issue #19: MySQL 替换 H2 — 数据库初始化脚本
--- 数据库：kskbl（由用户手动创建）
+-- 数据库：zuul
 -- 执行方式：mysql -u root -p123456 < docs/sql/issue19-init.sql
 
-CREATE DATABASE IF NOT EXISTS kskbl DEFAULT CHARACTER SET utf8mb4;
-USE kskbl;
+CREATE DATABASE IF NOT EXISTS zuul DEFAULT CHARACTER SET utf8mb4;
+USE zuul;
 
 -- 用户表
 CREATE TABLE IF NOT EXISTS users (

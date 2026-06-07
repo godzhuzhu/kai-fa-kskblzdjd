@@ -721,5 +721,5 @@ Room 之间相互引用会形成循环依赖，无法直接用 Gson 序列化。
 | #14 | 前端：游戏主界面（Game.vue + WebSocket） | zy | v3.0 |
 | #15 | 前端：路由配置 + 整体框架 | zy | v3.0 |
 | #16 | 配置 GitHub Actions CI | gmy | v1.0 |
-| #17 | 编写单元测试 | gmy | v2.0 |
-| #18 | 编写 README.md + REPORT.md | gmy | v3.0 |
+| #17 | 编写单元测试 | lfk | v2.0 |
+| #18 | 编写 README.md + REPORT.md | lfk | v3.0 |

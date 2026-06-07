@@ -139,6 +139,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    public void broadcastLocal(WebSocketOutgoingPayload payload) {
+        for (GameSession session : sessions.values()) {
+            sendToSession(session.getWebSocketSession(), payload);
+        }
+    }
+
     public List<Player> getOnlinePlayers() {
         List<Player> online = new ArrayList<>();
         for (GameSession session : sessions.values()) {

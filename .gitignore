@@ -5,3 +5,6 @@
 # 忽略以下文件
 *.iml
 .DS_Store
+.env
+docker-compose.override.yml
+*.log

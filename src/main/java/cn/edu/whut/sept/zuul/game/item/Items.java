@@ -18,7 +18,11 @@ public class Items {
             StormCleaver.class,
             MagicCookie.class,
             BloodVial.class,
-            StonehideElixir.class
+            StonehideElixir.class,
+            BerserkerTotem.class,
+            BloodDagger.class,
+            ImmortalCore.class,
+            ShadowbaneBallista.class
     };
 
     /**
@@ -55,6 +59,14 @@ public class Items {
                 return new BloodVial();
             case "StonehideElixir":
                 return new StonehideElixir();
+            case "BerserkerTotem":
+                return new BerserkerTotem();
+            case "BloodDagger":
+                return new BloodDagger();
+            case "ImmortalCore":
+                return new ImmortalCore();
+            case "ShadowbaneBallista":
+                return new ShadowbaneBallista();
             default:
                 return null;
         }

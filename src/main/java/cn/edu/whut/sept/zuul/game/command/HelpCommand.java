@@ -17,11 +17,9 @@ public class HelpCommand extends Command {
         "Your available commands are:\n"
         + "  go <direction>  - move to a neighboring room\n"
         + "  back            - return to the previous room\n"
-        + "  look            - view the current room\n"
         + "  take <item>     - pick up an item\n"
         + "  drop <item>     - drop an item from your bag\n"
         + "  use <item>      - use an item from your bag\n"
-        + "  items           - show items in your bag\n"
         + "  help            - show this help message\n"
         + "  quit            - quit the game";
 

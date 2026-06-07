@@ -290,7 +290,7 @@
 
 ### #9 实现 WebSocket 多人通信
 
-**Assignee:** lfk
+**Assignee:** gmy
 **Milestone:** v2.0
 **Labels:** enhancement
 
@@ -337,7 +337,7 @@
 
 ### #10 实现 HTTP API 用户系统（登录/注册/Token）
 
-**Assignee:** lfk
+**Assignee:** gmy
 **Milestone:** v2.0
 **Labels:** enhancement
 
@@ -429,7 +429,7 @@
 
 ### #12 实现数据库持久化（游戏存档）
 
-**Assignee:** lfk
+**Assignee:** gmy
 **Milestone:** v2.0
 **Labels:** enhancement
 
@@ -713,10 +713,10 @@ Room 之间相互引用会形成循环依赖，无法直接用 Gson 序列化。
 | #6 | 实现 TakeCommand / DropCommand / UseCommand | gmy | v1.0 |
 | #7 | 实现传送房间 + 随机传送逻辑 | lfk | v1.0 |
 | #8 | 实现消息系统（MessageBridge 等） | gmy | v1.0 |
-| #9 | 实现 WebSocket 多人通信 | lfk | v2.0 |
-| #10 | 实现 HTTP API 用户系统（登录/注册/Token） | lfk | v2.0 |
+| #9 | 实现 WebSocket 多人通信 | gmy | v2.0 |
+| #10 | 实现 HTTP API 用户系统（登录/注册/Token） | gmy | v2.0 |
 | #11 | 实现 AttackCommand 对战系统 | gmy | v2.0 |
-| #12 | 实现数据库持久化（游戏存档） | lfk | v2.0 |
+| #12 | 实现数据库持久化（游戏存档） | gmy | v2.0 |
 | #13 | 前端：登录/注册页面（Home.vue） | zy | v3.0 |
 | #14 | 前端：游戏主界面（Game.vue + WebSocket） | zy | v3.0 |
 | #15 | 前端：路由配置 + 整体框架 | zy | v3.0 |

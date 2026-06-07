@@ -2,6 +2,7 @@ package cn.edu.whut.sept.zuul;
 
 import cn.edu.whut.sept.zuul.game.Player;
 import cn.edu.whut.sept.zuul.game.Room;
+import cn.edu.whut.sept.zuul.game.message.AbsMessageBridge;
 import cn.edu.whut.sept.zuul.game.message.ConsoleMessageBridge;
 import cn.edu.whut.sept.zuul.game.message.GlobalMessage;
 import cn.edu.whut.sept.zuul.game.message.SinglePlayerMessage;
@@ -24,7 +25,7 @@ public class Game
     private Parser parser;
     private Player player;
     private List<Room> allRooms;
-    private ConsoleMessageBridge messageBridge;
+    private AbsMessageBridge messageBridge;
 
     private static final Random RANDOM = new Random();
 
@@ -134,7 +135,7 @@ public class Game
     // ==================== 消息系统 ====================
 
     /** @return 消息桥接实例（供所有 Command 使用） */
-    public ConsoleMessageBridge getMessageBridge() {
+    public AbsMessageBridge getMessageBridge() {
         return messageBridge;
     }
 

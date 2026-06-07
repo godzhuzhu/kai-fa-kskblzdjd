@@ -1,9 +1,12 @@
 package cn.edu.whut.sept.zuul;
 
+import cn.edu.whut.sept.zuul.game.command.AttackCommand;
 import cn.edu.whut.sept.zuul.game.command.BackCommand;
 import cn.edu.whut.sept.zuul.game.command.DropCommand;
 import cn.edu.whut.sept.zuul.game.command.GoCommand;
 import cn.edu.whut.sept.zuul.game.command.HelpCommand;
+import cn.edu.whut.sept.zuul.game.command.LoadCommand;
+import cn.edu.whut.sept.zuul.game.command.SaveCommand;
 import cn.edu.whut.sept.zuul.game.command.TakeCommand;
 import cn.edu.whut.sept.zuul.game.command.UseCommand;
 
@@ -19,9 +22,12 @@ public class CommandWords
         commands = new HashMap<String, Command>();
         commands.put("go", new GoCommand());
         commands.put("back", new BackCommand());
+        commands.put("attack", new AttackCommand());
         commands.put("take", new TakeCommand());
         commands.put("drop", new DropCommand());
         commands.put("use", new UseCommand());
+        commands.put("save", new SaveCommand());
+        commands.put("load", new LoadCommand());
         commands.put("help", new HelpCommand());
         commands.put("quit", new QuitCommand());
     }

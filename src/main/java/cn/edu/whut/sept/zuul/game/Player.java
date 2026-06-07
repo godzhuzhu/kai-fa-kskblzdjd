@@ -1,5 +1,9 @@
 package cn.edu.whut.sept.zuul.game;
 
+import cn.edu.whut.sept.zuul.game.combat.event.AttackEvent;
+import cn.edu.whut.sept.zuul.game.combat.event.DeathEvent;
+import cn.edu.whut.sept.zuul.game.combat.event.FightWinEvent;
+import cn.edu.whut.sept.zuul.game.combat.event.IPlayerListener;
 import cn.edu.whut.sept.zuul.game.item.AbstractItem;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +39,10 @@ public class Player {
     // 在线状态（v2.0 #9 启用）
     private boolean isOnline;
 
+    // 事件监听（v2.0 #11 启用）
+    private final List<IPlayerListener> listeners;
+    private long lastAttackTime;
+
     public Player(int userId, String playerName, Room startingRoom) {
         this.userId = userId;
         this.playerName = playerName;
@@ -47,6 +55,8 @@ public class Player {
         this.currentHealth = 100;
         this.maxHealth = 100;
         this.isOnline = false;
+        this.listeners = new ArrayList<>();
+        this.lastAttackTime = 0;
     }
 
     // ========== 基础 ==========
@@ -185,5 +195,45 @@ public class Player {
 
     public void setOnline(boolean online) {
         this.isOnline = online;
+    }
+
+    // ========== 事件监听器 ==========
+
+    public List<IPlayerListener> getListeners() {
+        return listeners;
+    }
+
+    public void addListener(IPlayerListener listener) {
+        listeners.add(listener);
+    }
+
+    public void removeListener(IPlayerListener listener) {
+        listeners.remove(listener);
+    }
+
+    public void notifyHurt(AttackEvent event) {
+        for (IPlayerListener l : new ArrayList<>(listeners)) {
+            l.onHurt(this, event);
+        }
+    }
+
+    public void notifyDeath(DeathEvent event) {
+        for (IPlayerListener l : new ArrayList<>(listeners)) {
+            l.onDeath(this, event);
+        }
+    }
+
+    public void notifyFightWin(FightWinEvent event) {
+        for (IPlayerListener l : new ArrayList<>(listeners)) {
+            l.onFightWin(this, event);
+        }
+    }
+
+    public long getLastAttackTime() {
+        return lastAttackTime;
+    }
+
+    public void setLastAttackTime(long lastAttackTime) {
+        this.lastAttackTime = lastAttackTime;
     }
 }

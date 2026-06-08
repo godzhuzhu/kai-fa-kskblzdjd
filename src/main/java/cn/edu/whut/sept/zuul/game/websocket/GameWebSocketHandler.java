@@ -4,8 +4,6 @@ import cn.edu.whut.sept.zuul.Game;
 import cn.edu.whut.sept.zuul.game.Player;
 import cn.edu.whut.sept.zuul.game.Room;
 import cn.edu.whut.sept.zuul.game.message.GameMessageBridge;
-import cn.edu.whut.sept.zuul.game.message.IMessage;
-import cn.edu.whut.sept.zuul.game.message.SinglePlayerMessage;
 import cn.edu.whut.sept.zuul.game.user.security.JwtUtil;
 import cn.edu.whut.sept.zuul.game.websocket.vo.PlayerVO;
 import cn.edu.whut.sept.zuul.game.websocket.vo.RoomPlayerVO;
@@ -34,11 +32,17 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     private final Map<String, GameSession> sessions = new ConcurrentHashMap<>();
     private final Map<Integer, GameSession> playerSessions = new ConcurrentHashMap<>();
 
-    public GameWebSocketHandler(Game game, JwtUtil jwtUtil, GameMessageBridge messageBridge) {
+    private final RedisSessionManager redisSessionManager;
+    private final RedisPubSubService redisPubSubService;
+
+    public GameWebSocketHandler(Game game, JwtUtil jwtUtil, GameMessageBridge messageBridge,
+                                RedisSessionManager redisSessionManager, RedisPubSubService redisPubSubService) {
         this.game = game;
         this.jwtUtil = jwtUtil;
         this.messageBridge = messageBridge;
         this.objectMapper = new ObjectMapper();
+        this.redisSessionManager = redisSessionManager;
+        this.redisPubSubService = redisPubSubService;
     }
 
     @Override
@@ -64,10 +68,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         sessions.put(session.getId(), gameSession);
         playerSessions.put(userId, gameSession);
 
+        if (redisSessionManager != null) {
+            redisSessionManager.playerOnline(player);
+        }
+
         sendToSession(session, new WebSocketOutgoingPayload("playerPush", PlayerVO.from(player)));
-        sendToSession(session, new WebSocketOutgoingPayload("roomPush",
-                RoomVO.from(player.getCurrentRoom(),
-                        RoomPlayerVO.fromList(getPlayersInRoom(player.getCurrentRoom(), player)))));
+        roomPush(player.getCurrentRoom());
     }
 
     @Override
@@ -82,6 +88,9 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
         if ("heartbeat".equals(action)) {
             gameSession.updateHeartbeat();
+            if (redisSessionManager != null) {
+                redisSessionManager.updateHeartbeat(gameSession.getPlayer());
+            }
             return;
         }
 
@@ -100,6 +109,9 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         if (gameSession != null) {
             gameSession.getPlayer().setOnline(false);
             playerSessions.remove(gameSession.getPlayer().getUserId());
+            if (redisSessionManager != null) {
+                redisSessionManager.playerOffline(gameSession.getPlayer());
+            }
         }
     }
 
@@ -114,13 +126,36 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     public void roomPush(Room room) {
         List<Player> playersInRoom = getPlayersInRoom(room, null);
         List<RoomPlayerVO> playerVOs = RoomPlayerVO.fromList(playersInRoom);
+        WebSocketOutgoingPayload payload = new WebSocketOutgoingPayload("roomPush", RoomVO.from(room, playerVOs));
 
-        for (Player p : playersInRoom) {
-            GameSession session = playerSessions.get(p.getUserId());
-            if (session != null) {
-                sendToSession(session.getWebSocketSession(),
-                        new WebSocketOutgoingPayload("roomPush", RoomVO.from(room, playerVOs)));
+        if (redisPubSubService != null) {
+            try {
+                String json = objectMapper.writeValueAsString(payload);
+                redisPubSubService.publish(room.getName(), json);
+            } catch (Exception ignored) {
             }
+        }
+
+        if (redisPubSubService == null) {
+            for (Player p : playersInRoom) {
+                GameSession session = playerSessions.get(p.getUserId());
+                if (session != null) {
+                    sendToSession(session.getWebSocketSession(), payload);
+                }
+            }
+        }
+    }
+
+    public void handlePubSubMessage(String roomName, String jsonPayload) {
+        try {
+            WebSocketOutgoingPayload payload = objectMapper.readValue(jsonPayload, WebSocketOutgoingPayload.class);
+            for (GameSession session : sessions.values()) {
+                Player p = session.getPlayer();
+                if (p.isOnline() && p.getCurrentRoom().getName().equals(roomName)) {
+                    sendToSession(session.getWebSocketSession(), payload);
+                }
+            }
+        } catch (Exception ignored) {
         }
     }
 
@@ -147,10 +182,20 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
     public List<Player> getOnlinePlayers() {
         List<Player> online = new ArrayList<>();
-        for (GameSession session : sessions.values()) {
-            Player p = session.getPlayer();
-            if (p.isOnline()) {
-                online.add(p);
+        if (redisSessionManager != null) {
+            List<Integer> ids = redisSessionManager.getOnlinePlayerIds();
+            for (int id : ids) {
+                GameSession session = playerSessions.get(id);
+                if (session != null && session.getPlayer().isOnline()) {
+                    online.add(session.getPlayer());
+                }
+            }
+        } else {
+            for (GameSession session : sessions.values()) {
+                Player p = session.getPlayer();
+                if (p.isOnline()) {
+                    online.add(p);
+                }
             }
         }
         return online;
@@ -158,16 +203,34 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
     public List<Player> getPlayersInRoom(Room room, Player exclude) {
         List<Player> result = new ArrayList<>();
-        for (GameSession session : sessions.values()) {
-            Player p = session.getPlayer();
-            if (p.isOnline() && p.getCurrentRoom() == room && p != exclude) {
-                result.add(p);
+        if (redisSessionManager != null) {
+            List<Integer> ids = redisSessionManager.getPlayersInRoom(room);
+            for (int id : ids) {
+                GameSession session = playerSessions.get(id);
+                if (session != null) {
+                    Player p = session.getPlayer();
+                    if (p.isOnline() && p != exclude) {
+                        result.add(p);
+                    }
+                }
+            }
+        } else {
+            for (GameSession session : sessions.values()) {
+                Player p = session.getPlayer();
+                if (p.isOnline() && p.getCurrentRoom() == room && p != exclude) {
+                    result.add(p);
+                }
             }
         }
         return result;
     }
 
     public void checkHeartbeats() {
+        if (redisSessionManager != null) {
+            redisSessionManager.checkHeartbeats(HEARTBEAT_TIMEOUT);
+            return;
+        }
+
         long now = System.currentTimeMillis();
         List<String> toRemove = new ArrayList<>();
         for (Map.Entry<String, GameSession> entry : sessions.entrySet()) {

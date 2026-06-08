@@ -1,20 +1,15 @@
 package cn.edu.whut.sept.zuul.game.websocket;
 
-import cn.edu.whut.sept.zuul.game.Room;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.connection.Message;
 import org.springframework.data.redis.connection.MessageListener;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.data.redis.listener.ChannelTopic;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.listener.PatternTopic;
 import org.springframework.data.redis.listener.RedisMessageListenerContainer;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import jakarta.annotation.PreDestroy;
 
 @Component
 @Profile("prod")
@@ -22,49 +17,39 @@ public class RedisPubSubService implements MessageListener {
 
     private static final String CHANNEL_PREFIX = "channel:room:";
 
-    private final RedisTemplate<String, String> redisTemplate;
+    private final StringRedisTemplate redis;
     private final RedisMessageListenerContainer container;
-    private final ObjectMapper objectMapper;
-
-    private final Map<String, WebSocketOutgoingPayload> lastPayloads = new ConcurrentHashMap<>();
-
     private GameWebSocketHandler handler;
 
-    public RedisPubSubService(RedisTemplate<String, String> redisTemplate,
-                              RedisMessageListenerContainer container) {
-        this.redisTemplate = redisTemplate;
+    public RedisPubSubService(StringRedisTemplate redis, RedisMessageListenerContainer container) {
+        this.redis = redis;
         this.container = container;
-        this.objectMapper = new ObjectMapper();
+    }
+
+    @PostConstruct
+    public void init() {
+        container.addMessageListener(this, new PatternTopic(CHANNEL_PREFIX + "*"));
+    }
+
+    @PreDestroy
+    public void destroy() {
+        container.removeMessageListener(this);
     }
 
     public void setHandler(GameWebSocketHandler handler) {
         this.handler = handler;
     }
 
-    @PostConstruct
-    public void init() {
-        container.addMessageListener(this, ChannelTopic.of(CHANNEL_PREFIX + "*"));
-    }
-
-    public void publish(Room room, WebSocketOutgoingPayload payload) {
-        String channel = CHANNEL_PREFIX + room.getName();
-        String key = channel + ":" + payload.getType();
-        String body = lastPayloads.get(key) == null ? "" : "";
-        try {
-            redisTemplate.convertAndSend(channel, objectMapper.writeValueAsString(payload));
-        } catch (IOException e) {
-        }
+    public void publish(String roomName, String jsonPayload) {
+        redis.convertAndSend(CHANNEL_PREFIX + roomName, jsonPayload);
     }
 
     @Override
     public void onMessage(Message message, byte[] pattern) {
-        if (handler == null) {
-            return;
-        }
-        try {
-            WebSocketOutgoingPayload payload = objectMapper.readValue(message.getBody(), WebSocketOutgoingPayload.class);
-            handler.broadcastLocal(payload);
-        } catch (Exception ignored) {
+        if (handler != null) {
+            String channel = new String(message.getChannel());
+            String roomName = channel.substring(CHANNEL_PREFIX.length());
+            handler.handlePubSubMessage(roomName, new String(message.getBody()));
         }
     }
 }

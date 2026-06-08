@@ -40,12 +40,11 @@ public class GoCommand extends Command {
         if (nextRoom.isPortal()) {
             game.getMessageBridge().send(
                 new SinglePlayerMessage("A mysterious force transports you..."), player);
-            // 先进入传送房间（记录历史）
-            player.moveTo(nextRoom);
-            // 再从所有房间中随机传送
             Room randomRoom = game.getRandomRoom();
             if (randomRoom != null) {
                 player.moveTo(randomRoom);
+            } else {
+                player.moveTo(nextRoom);
             }
         } else {
             player.moveTo(nextRoom);

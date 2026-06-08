@@ -136,10 +136,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             }
         }
 
-        for (Player p : playersInRoom) {
-            GameSession session = playerSessions.get(p.getUserId());
-            if (session != null) {
-                sendToSession(session.getWebSocketSession(), payload);
+        if (redisPubSubService == null) {
+            for (Player p : playersInRoom) {
+                GameSession session = playerSessions.get(p.getUserId());
+                if (session != null) {
+                    sendToSession(session.getWebSocketSession(), payload);
+                }
             }
         }
     }

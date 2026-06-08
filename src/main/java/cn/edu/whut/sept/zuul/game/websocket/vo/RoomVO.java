@@ -7,33 +7,33 @@ import java.util.List;
 
 public class RoomVO {
 
-    private String name;
+    private String roomName;
     private String description;
-    private List<String> items;
+    private List<BagItemVO> items;
     private List<String> exits;
     private List<RoomPlayerVO> players;
     private boolean portal;
 
     public static RoomVO from(Room r, List<RoomPlayerVO> players) {
         RoomVO vo = new RoomVO();
-        vo.name = r.getName();
+        vo.roomName = r.getName();
         vo.description = r.getShortDescription();
         vo.portal = r.isPortal();
         vo.items = new ArrayList<>();
         for (AbstractItem item : r.getItems()) {
-            vo.items.add(item.getName());
+            vo.items.add(new BagItemVO(item.getName(), item.getWeight()));
         }
         vo.exits = new ArrayList<>(r.getExits());
         vo.players = players;
         return vo;
     }
 
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    public String getRoomName() { return roomName; }
+    public void setRoomName(String roomName) { this.roomName = roomName; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
-    public List<String> getItems() { return items; }
-    public void setItems(List<String> items) { this.items = items; }
+    public List<BagItemVO> getItems() { return items; }
+    public void setItems(List<BagItemVO> items) { this.items = items; }
     public List<String> getExits() { return exits; }
     public void setExits(List<String> exits) { this.exits = exits; }
     public List<RoomPlayerVO> getPlayers() { return players; }

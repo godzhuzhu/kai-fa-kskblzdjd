@@ -22,6 +22,11 @@ public class StoreManager {
     public void saveGame(Game game, String saveName) {
         List<Room> allRooms = game.getAllRooms();
         List<Player> allPlayers = new ArrayList<>();
+        for (Player p : game.getAllPlayers().values()) {
+            if (p.isOnline()) {
+                allPlayers.add(p);
+            }
+        }
         Store store = Store.fromGame(allRooms, allPlayers);
         String json = StoreUtil.toJson(store);
         storeService.save(saveName, json);

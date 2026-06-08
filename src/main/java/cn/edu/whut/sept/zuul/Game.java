@@ -6,7 +6,9 @@ import cn.edu.whut.sept.zuul.game.message.AbsMessageBridge;
 import cn.edu.whut.sept.zuul.game.message.ConsoleMessageBridge;
 import cn.edu.whut.sept.zuul.game.message.GlobalMessage;
 import cn.edu.whut.sept.zuul.game.message.SinglePlayerMessage;
+import cn.edu.whut.sept.zuul.game.store.StoreManager;
 import jakarta.annotation.PostConstruct;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -25,6 +27,9 @@ public class Game {
     private Map<Integer, Player> playerMap;
     private Room startingRoom;
 
+    @Autowired
+    private StoreManager storeManager;
+
     private static final Random RANDOM = new Random();
 
     public Game() {
@@ -35,7 +40,7 @@ public class Game {
     private void init() {
         playerMap = new ConcurrentHashMap<>();
         createRooms();
-        parser = new Parser();
+        parser = new Parser(storeManager);
     }
 
     private void createRooms() {
@@ -135,6 +140,10 @@ public class Game {
 
     public Room getStartingRoom() {
         return startingRoom;
+    }
+
+    public Map<Integer, Player> getAllPlayers() {
+        return playerMap;
     }
 
     public Room getRandomRoom() {

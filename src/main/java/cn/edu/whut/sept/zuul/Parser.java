@@ -1,15 +1,23 @@
 package cn.edu.whut.sept.zuul;
 
+import cn.edu.whut.sept.zuul.game.store.StoreManager;
+
 import java.util.Scanner;
 
 public class Parser
 {
-    private CommandWords commands;  // holds all valid command words
-    private Scanner reader;         // source of command input
+    private CommandWords commands;
+    private Scanner reader;
+
+    public Parser(StoreManager storeManager)
+    {
+        commands = new CommandWords(storeManager);
+        reader = new Scanner(System.in);
+    }
 
     public Parser()
     {
-        commands = new CommandWords();
+        commands = new CommandWords(null);
         reader = new Scanner(System.in);
     }
 

@@ -1,6 +1,7 @@
 package cn.edu.whut.sept.zuul.game.websocket.vo;
 
 import cn.edu.whut.sept.zuul.game.Player;
+import cn.edu.whut.sept.zuul.game.item.AbstractItem;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,7 +15,7 @@ public class PlayerVO {
     private int maxHealth;
     private int maxCapacity;
     private int currentLoad;
-    private List<String> bagItemNames;
+    private List<BagItemVO> bag;
     private String currentRoomName;
 
     public static PlayerVO from(Player p) {
@@ -28,8 +29,10 @@ public class PlayerVO {
         vo.maxCapacity = p.getMaxCapacity();
         vo.currentLoad = p.getCurrentLoad();
         vo.currentRoomName = p.getCurrentRoom().getName();
-        vo.bagItemNames = new ArrayList<>();
-        p.getBag().forEach(i -> vo.bagItemNames.add(i.getName()));
+        vo.bag = new ArrayList<>();
+        for (AbstractItem i : p.getBag()) {
+            vo.bag.add(new BagItemVO(i.getName(), i.getWeight()));
+        }
         return vo;
     }
 
@@ -49,8 +52,8 @@ public class PlayerVO {
     public void setMaxCapacity(int maxCapacity) { this.maxCapacity = maxCapacity; }
     public int getCurrentLoad() { return currentLoad; }
     public void setCurrentLoad(int currentLoad) { this.currentLoad = currentLoad; }
-    public List<String> getBagItemNames() { return bagItemNames; }
-    public void setBagItemNames(List<String> bagItemNames) { this.bagItemNames = bagItemNames; }
+    public List<BagItemVO> getBag() { return bag; }
+    public void setBag(List<BagItemVO> bag) { this.bag = bag; }
     public String getCurrentRoomName() { return currentRoomName; }
     public void setCurrentRoomName(String currentRoomName) { this.currentRoomName = currentRoomName; }
 }

@@ -134,6 +134,13 @@ public class Game {
         return messageBridge;
     }
 
+    public String getLastCommandOutput() {
+        if (messageBridge instanceof ConsoleMessageBridge) {
+            return ((ConsoleMessageBridge) messageBridge).getLastMessage();
+        }
+        return "";
+    }
+
     public List<Room> getAllRooms() {
         return new ArrayList<>(allRooms);
     }

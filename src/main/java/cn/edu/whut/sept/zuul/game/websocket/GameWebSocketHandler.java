@@ -100,6 +100,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             game.processCommand(player, cmd);
             playerPush(player);
             roomPush(player.getCurrentRoom());
+            messagePush(player, game.getLastCommandOutput());
         }
     }
 
@@ -186,14 +187,17 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             List<Integer> ids = redisSessionManager.getOnlinePlayerIds();
             for (int id : ids) {
                 GameSession session = playerSessions.get(id);
-                if (session != null && session.getPlayer().isOnline()) {
-                    online.add(session.getPlayer());
+                if (session != null && session.getWebSocketSession().isOpen()) {
+                    Player p = session.getPlayer();
+                    if (p.isOnline()) {
+                        online.add(p);
+                    }
                 }
             }
         } else {
             for (GameSession session : sessions.values()) {
                 Player p = session.getPlayer();
-                if (p.isOnline()) {
+                if (p.isOnline() && session.getWebSocketSession().isOpen()) {
                     online.add(p);
                 }
             }
@@ -207,17 +211,20 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             List<Integer> ids = redisSessionManager.getPlayersInRoom(room);
             for (int id : ids) {
                 GameSession session = playerSessions.get(id);
-                if (session != null) {
+                if (session != null && session.getWebSocketSession().isOpen()) {
                     Player p = session.getPlayer();
                     if (p.isOnline() && p != exclude) {
                         result.add(p);
                     }
+                } else if (session != null) {
+                    session.getPlayer().setOnline(false);
                 }
             }
         } else {
             for (GameSession session : sessions.values()) {
                 Player p = session.getPlayer();
-                if (p.isOnline() && p.getCurrentRoom() == room && p != exclude) {
+                if (p.isOnline() && p.getCurrentRoom() == room && p != exclude
+                        && session.getWebSocketSession().isOpen()) {
                     result.add(p);
                 }
             }

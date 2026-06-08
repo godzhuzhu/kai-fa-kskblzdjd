@@ -1,0 +1,195 @@
+<template>
+  <div class="home-container">
+    <div class="title-section">
+      <h1 class="game-title">World of Zuul</h1>
+      <p class="subtitle">Embark on an epic adventure</p>
+    </div>
+    <div class="form-card">
+      <div class="tabs">
+        <button :class="['tab', { active: activeTab === 'login' }]" @click="activeTab = 'login'">Login</button>
+        <button :class="['tab', { active: activeTab === 'register' }]" @click="activeTab = 'register'">Register</button>
+      </div>
+
+      <form v-if="activeTab === 'login'" @submit.prevent="handleLogin" class="form">
+        <el-input v-model="loginForm.username" placeholder="Username" class="input" :prefix-icon="User" />
+        <el-input v-model="loginForm.password" type="password" placeholder="Password" class="input" show-password :prefix-icon="Lock" />
+        <p v-if="loginError" class="error">{{ loginError }}</p>
+        <el-button type="primary" native-type="submit" class="submit-btn" :loading="loginLoading">Login</el-button>
+      </form>
+
+      <form v-else @submit.prevent="handleRegister" class="form">
+        <el-input v-model="registerForm.username" placeholder="Username" class="input" :prefix-icon="User" />
+        <el-input v-model="registerForm.password" type="password" placeholder="Password (min 6 characters)" class="input" show-password :prefix-icon="Lock" />
+        <el-input v-model="registerForm.confirmPassword" type="password" placeholder="Confirm Password" class="input" show-password :prefix-icon="Lock" />
+        <p v-if="registerError" class="error">{{ registerError }}</p>
+        <el-button type="primary" native-type="submit" class="submit-btn" :loading="registerLoading">Register</el-button>
+      </form>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
+import { User, Lock } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+
+const router = useRouter()
+
+const activeTab = ref<'login' | 'register'>('login')
+
+const loginForm = reactive({ username: '', password: '' })
+const registerForm = reactive({ username: '', password: '', confirmPassword: '' })
+const loginError = ref('')
+const registerError = ref('')
+const loginLoading = ref(false)
+const registerLoading = ref(false)
+
+async function handleLogin() {
+  loginError.value = ''
+  if (!loginForm.username.trim()) { loginError.value = 'Username cannot be empty'; return }
+  if (!loginForm.password) { loginError.value = 'Password cannot be empty'; return }
+  loginLoading.value = true
+  try {
+    const res = await fetch('/api/user/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: loginForm.username, password: loginForm.password })
+    })
+    const data = await res.json()
+    if (data.success) {
+      sessionStorage.setItem('token', data.data.token)
+      sessionStorage.setItem('userId', data.data.userId)
+      ElMessage.success('Login successful')
+      router.push('/game')
+    } else {
+      loginError.value = data.message || 'Login failed'
+    }
+  } catch {
+    loginError.value = 'Network error, please try again'
+  } finally {
+    loginLoading.value = false
+  }
+}
+
+async function handleRegister() {
+  registerError.value = ''
+  if (!registerForm.username.trim()) { registerError.value = 'Username cannot be empty'; return }
+  if (registerForm.password.length < 6) { registerError.value = 'Password must be at least 6 characters'; return }
+  if (registerForm.password !== registerForm.confirmPassword) { registerError.value = 'Passwords do not match'; return }
+  registerLoading.value = true
+  try {
+    const res = await fetch('/api/user/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: registerForm.username, password: registerForm.password })
+    })
+    const data = await res.json()
+    if (data.success) {
+      ElMessage.success('Registration successful, please login')
+      loginForm.username = registerForm.username
+      activeTab.value = 'login'
+    } else {
+      registerError.value = data.message || 'Registration failed'
+    }
+  } catch {
+    registerError.value = 'Network error, please try again'
+  } finally {
+    registerLoading.value = false
+  }
+}
+</script>
+
+<style scoped>
+.home-container {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+}
+.title-section {
+  text-align: center;
+}
+.game-title {
+  font-size: 64px;
+  font-weight: 700;
+  color: #f0d9a0;
+  text-shadow: 0 0 30px rgba(240, 217, 160, 0.3), 0 4px 8px rgba(0,0,0,0.5);
+  letter-spacing: 4px;
+}
+.subtitle {
+  font-size: 18px;
+  color: rgba(255,255,255,0.6);
+  margin-top: 8px;
+  letter-spacing: 2px;
+}
+.form-card {
+  background: rgba(20, 20, 30, 0.85);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  padding: 32px;
+  width: 380px;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.tabs {
+  display: flex;
+  margin-bottom: 24px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.tab {
+  flex: 1;
+  padding: 12px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  border-bottom: 2px solid transparent;
+}
+.tab.active {
+  color: #f0d9a0;
+  border-bottom-color: #f0d9a0;
+}
+.tab:hover {
+  color: rgba(255,255,255,0.8);
+}
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.input {
+  --el-input-bg-color: rgba(255,255,255,0.05);
+  --el-input-border-color: rgba(255,255,255,0.15);
+  --el-input-text-color: #fff;
+  --el-input-placeholder-color: rgba(255,255,255,0.35);
+  --el-input-hover-border-color: #f0d9a0;
+  --el-input-focus-border-color: #f0d9a0;
+}
+.input :deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.1) inset;
+}
+.input :deep(.el-input__inner) {
+  color: #fff;
+}
+.submit-btn {
+  width: 100%;
+  margin-top: 8px;
+  --el-button-bg-color: #c4a35a;
+  --el-button-border-color: #c4a35a;
+  --el-button-hover-bg-color: #d4b36a;
+  --el-button-hover-border-color: #d4b36a;
+  font-size: 16px;
+  padding: 12px;
+  height: auto;
+}
+.error {
+  color: #f56c6c;
+  font-size: 13px;
+  text-align: center;
+}
+</style>

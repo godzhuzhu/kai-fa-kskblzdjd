@@ -24,7 +24,7 @@
         <div class="weight-info">负重：{{ player.currentLoad }}/{{ player.maxCapacity }}</div>
         <div class="item-list">
           <div v-for="item in player.bag" :key="item.name" class="item-row clickable" @click="handleItemAction(item)">
-            <span>{{ item.name }}</span>
+            <span>{{ tItem(item.name) }}</span>
             <span class="item-weight">{{ item.weight }}kg</span>
           </div>
           <div v-if="!player.bag || player.bag.length === 0" class="empty-hint">空</div>
@@ -40,7 +40,7 @@
         <div class="section-label">出口</div>
         <div class="exit-buttons">
           <el-button v-for="exit in room.exits" :key="exit" size="small" class="exit-btn" @click="sendCommand('go ' + exit)">
-            Go {{ exit }}
+            前往 {{ tDirection(exit) }}
           </el-button>
         </div>
 
@@ -48,7 +48,7 @@
         <div class="section-label">房间物品</div>
         <div class="item-list">
           <div v-for="item in room.items" :key="item.name" class="item-row clickable" @click="handleItemAction(item, true)">
-            <span>{{ item.name }}</span>
+            <span>{{ tItem(item.name) }}</span>
             <span class="item-weight">{{ item.weight }}kg</span>
           </div>
           <div v-if="!room.items || room.items.length === 0" class="empty-hint">无物品</div>
@@ -117,6 +117,28 @@
 </template>
 
 <script setup lang="ts">
+
+const directionMap: Record<string, string> = {
+  north: '北', south: '南', east: '东', west: '西',
+  up: '上', down: '下', northeast: '东北', northwest: '西北',
+  southeast: '东南', southwest: '西南'
+}
+
+const itemNameMap: Record<string, string> = {
+  BloodVial: '血瓶', Sword: '剑', MagicCookie: '魔法饼干',
+  StormCleaver: '风暴切割者', DragonscaleBulwark: '龙鳞堡垒',
+  StonehideElixir: '石肤药剂', BerserkerTotem: '狂战士图腾',
+  BloodDagger: '血匕首', ImmortalCore: '不朽核心',
+  ShadowbaneBallista: '暗影弩炮'
+}
+
+function tDirection(dir: string): string {
+  return directionMap[dir] || dir
+}
+
+function tItem(name: string): string {
+  return itemNameMap[name] || name
+}
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 const WS_URL = 'ws://localhost:8080/game/websocket'
 

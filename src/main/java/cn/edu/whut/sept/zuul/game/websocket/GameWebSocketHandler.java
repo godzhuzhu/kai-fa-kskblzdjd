@@ -97,10 +97,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         if ("command".equals(action)) {
             String cmd = payload.getData();
             Player player = gameSession.getPlayer();
-            game.processCommand(player, cmd);
+            String output = game.processCommand(player, cmd);
             playerPush(player);
             roomPush(player.getCurrentRoom());
-            messagePush(player, game.getLastCommandOutput());
+            if (output != null && !output.isEmpty()) {
+                messagePush(player, output);
+            }
         }
     }
 
@@ -216,8 +218,6 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     if (p.isOnline() && p != exclude) {
                         result.add(p);
                     }
-                } else if (session != null) {
-                    session.getPlayer().setOnline(false);
                 }
             }
         } else {

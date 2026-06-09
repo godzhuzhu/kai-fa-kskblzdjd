@@ -199,24 +199,11 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
     public List<Player> getPlayersInRoom(Room room, Player exclude) {
         List<Player> result = new ArrayList<>();
-        if (redisSessionManager != null) {
-            List<Integer> ids = redisSessionManager.getPlayersInRoom(room);
-            for (int id : ids) {
-                GameSession session = playerSessions.get(id);
-                if (session != null && session.getWebSocketSession().isOpen()) {
-                    Player p = session.getPlayer();
-                    if (p.isOnline() && p != exclude) {
-                        result.add(p);
-                    }
-                }
-            }
-        } else {
-            for (GameSession session : sessions.values()) {
-                Player p = session.getPlayer();
-                if (p.isOnline() && p.getCurrentRoom() == room && p != exclude
-                        && session.getWebSocketSession().isOpen()) {
-                    result.add(p);
-                }
+        for (GameSession session : sessions.values()) {
+            Player p = session.getPlayer();
+            if (p.isOnline() && p.getCurrentRoom() == room && p != exclude
+                    && session.getWebSocketSession().isOpen()) {
+                result.add(p);
             }
         }
         return result;

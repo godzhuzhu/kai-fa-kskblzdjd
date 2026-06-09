@@ -11,9 +11,9 @@ public class ItemsCommand extends Command {
     @Override
     public boolean execute(Game game, Player player) {
         StringBuilder sb = new StringBuilder();
-        sb.append("Your bag: ");
+        sb.append("你的背包: ");
         if (player.getBag().isEmpty()) {
-            sb.append("empty");
+            sb.append("空的");
         } else {
             for (AbstractItem item : player.getBag()) {
                 sb.append(item.getName()).append("(").append(item.getWeight()).append("kg) ");

@@ -20,7 +20,7 @@ public class TakeCommand extends Command {
     @Override
     public boolean execute(Game game, Player player) {
         if (!hasSecondWord()) {
-            game.getMessageBridge().send(new SinglePlayerMessage("Take what?"), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("要拾取什么？"), player);
             return false;
         }
 
@@ -29,19 +29,19 @@ public class TakeCommand extends Command {
         AbstractItem item = room.getItem(itemName);
 
         if (item == null) {
-            game.getMessageBridge().send(new SinglePlayerMessage("There is no such item here."), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("这里没有这个物品。"), player);
             return false;
         }
 
         if (!player.canCarry(item)) {
             game.getMessageBridge().send(new SinglePlayerMessage(
-                    "You cannot carry more items! Max capacity: " + player.getMaxCapacity()), player);
+                    "负重已满！最大负重: " + player.getMaxCapacity()), player);
             return false;
         }
 
         room.removeItem(itemName);
         player.takeItem(item);
-        game.getMessageBridge().send(new SinglePlayerMessage("You took the " + item.getName() + "."), player);
+        game.getMessageBridge().send(new SinglePlayerMessage("你拾取了 " + item.getName() + "."), player);
         return false;
     }
 }

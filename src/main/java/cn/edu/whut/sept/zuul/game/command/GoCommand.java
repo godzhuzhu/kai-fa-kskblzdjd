@@ -20,7 +20,7 @@ public class GoCommand extends Command {
     @Override
     public boolean execute(Game game, Player player) {
         if (!hasSecondWord()) {
-            game.getMessageBridge().send(new SinglePlayerMessage("Go where?"), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("要去哪里？"), player);
             return false;
         }
 
@@ -32,14 +32,14 @@ public class GoCommand extends Command {
         Room nextRoom = currentRoom.getExitMap().get(direction);
 
         if (nextRoom == null) {
-            game.getMessageBridge().send(new SinglePlayerMessage("There is no door!"), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("那里没有门！"), player);
             return false;
         }
 
         // 传送房间处理
         if (nextRoom.isPortal()) {
             game.getMessageBridge().send(
-                new SinglePlayerMessage("A mysterious force transports you..."), player);
+                new SinglePlayerMessage("一股神秘力量将你传送..."), player);
             Room randomRoom = game.getRandomRoom();
             if (randomRoom != null) {
                 player.moveTo(randomRoom);

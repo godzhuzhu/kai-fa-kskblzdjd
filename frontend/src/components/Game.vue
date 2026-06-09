@@ -1,5 +1,14 @@
 <template>
   <div class="game-container">
+    <!-- Settings Bar -->
+    <div class="settings-bar">
+      <span class="settings-welcome">
+        {{ player.playerName || 'Player' }}
+      </span>
+      <el-button class="settings-btn" @click="settingsVisible = true">
+        <el-icon><Setting /></el-icon> 设置
+      </el-button>
+    </div>
     <div v-if="disconnected" class="reconnect-banner">
       连接断开。<a href="#" @click.prevent="reconnect">点击重新连接</a>
     </div>
@@ -114,6 +123,48 @@
       </div>
     </el-dialog>
   </div>
+
+    <!-- Settings Dialog -->
+    <el-dialog v-model="settingsVisible" title="设置" width="420px" top="15vh" class="settings-dialog">
+      <el-tabs v-model="settingsTab">
+        <el-tab-pane label="修改密码" name="password">
+          <el-form label-position="top" class="settings-form">
+            <el-form-item label="旧密码">
+              <el-input v-model="pwForm.oldPassword" type="password" show-password placeholder="输入旧密码" />
+            </el-form-item>
+            <el-form-item label="新密码">
+              <el-input v-model="pwForm.newPassword" type="password" show-password placeholder="至少6位" />
+            </el-form-item>
+            <p v-if="pwError" class="settings-error">{{ pwError }}</p>
+            <p v-if="pwSuccess" class="settings-success">{{ pwSuccess }}</p>
+            <el-button type="primary" class="settings-submit" @click="doChangePassword" :loading="pwLoading">确认修改</el-button>
+          </el-form>
+        </el-tab-pane>
+        <el-tab-pane label="修改名称" name="name">
+          <el-form label-position="top" class="settings-form">
+            <el-form-item label="玩家名称">
+              <el-input v-model="nameForm.playerName" placeholder="输入新名称" />
+            </el-form-item>
+            <p v-if="nameError" class="settings-error">{{ nameError }}</p>
+            <p v-if="nameSuccess" class="settings-success">{{ nameSuccess }}</p>
+            <el-button type="primary" class="settings-submit" @click="doChangeName" :loading="nameLoading">确认修改</el-button>
+          </el-form>
+        </el-tab-pane>
+        <el-tab-pane label="重置游戏" name="reset">
+          <div class="settings-form">
+            <p style="color: #ccc; margin-bottom: 16px;">重置将清空背包、回到起点、恢复初始属性。此操作不可撤销。</p>
+            <p v-if="resetError" class="settings-error">{{ resetError }}</p>
+            <p v-if="resetSuccess" class="settings-success">{{ resetSuccess }}</p>
+            <el-button type="danger" class="settings-submit" @click="doResetGame" :loading="resetLoading">确认重置</el-button>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
+      <template #footer>
+        <el-button type="danger" plain @click="doLogout" style="float:left">退出登录</el-button>
+        <el-button @click="settingsVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
 </template>
 
 <script setup lang="ts">
@@ -140,6 +191,7 @@ function tItem(name: string): string {
   return itemNameMap[name] || name
 }
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { Setting } from '@element-plus/icons-vue'
 const WS_URL = 'ws://localhost:8080/game/websocket'
 
 const player = reactive<any>({
@@ -166,6 +218,21 @@ const selectedItemInRoom = ref(false)
 const attackDialogVisible = ref(false)
 const attackTarget = ref<any>(null)
 const attackTargetName = ref('')
+
+// Settings
+const settingsVisible = ref(false)
+const settingsTab = ref('password')
+const pwForm = reactive({ oldPassword: '', newPassword: '' })
+const nameForm = reactive({ playerName: '' })
+const pwError = ref('')
+const pwSuccess = ref('')
+const nameError = ref('')
+const nameSuccess = ref('')
+const resetError = ref('')
+const resetSuccess = ref('')
+const pwLoading = ref(false)
+const nameLoading = ref(false)
+const resetLoading = ref(false)
 
 const hpPercent = computed(() => {
   if (!player.maxHealth) return 100
@@ -279,6 +346,80 @@ function doAttack() {
     sendCommand('attack ' + attackTarget.value.playerName)
   }
   attackDialogVisible.value = false
+}
+
+
+async function doChangePassword() {
+  pwError.value = ''; pwSuccess.value = ''
+  if (!pwForm.oldPassword) { pwError.value = '请输入旧密码'; return }
+  if (pwForm.newPassword.length < 6) { pwError.value = '新密码至少需要6位'; return }
+  pwLoading.value = true
+  try {
+    const token = sessionStorage.getItem('token')
+    const res = await fetch('/api/user/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ oldPassword: pwForm.oldPassword, newPassword: pwForm.newPassword })
+    })
+    const data = await res.json()
+    if (data.success) {
+      pwSuccess.value = '密码修改成功'
+      pwForm.oldPassword = ''; pwForm.newPassword = ''
+    } else {
+      pwError.value = data.message || '修改失败'
+    }
+  } catch { pwError.value = '网络错误' }
+  finally { pwLoading.value = false }
+}
+
+async function doChangeName() {
+  nameError.value = ''; nameSuccess.value = ''
+  if (!nameForm.playerName.trim()) { nameError.value = '名称不能为空'; return }
+  nameLoading.value = true
+  try {
+    const token = sessionStorage.getItem('token')
+    const res = await fetch('/api/user/change-name', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ playerName: nameForm.playerName.trim() })
+    })
+    const data = await res.json()
+    if (data.success) {
+      nameSuccess.value = '名称修改成功'
+      player.playerName = nameForm.playerName.trim()
+      nameForm.playerName = ''
+    } else {
+      nameError.value = data.message || '修改失败'
+    }
+  } catch { nameError.value = '网络错误' }
+  finally { nameLoading.value = false }
+}
+
+async function doResetGame() {
+  resetError.value = ''; resetSuccess.value = ''
+  resetLoading.value = true
+  try {
+    const token = sessionStorage.getItem('token')
+    const res = await fetch('/api/user/reset-game', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
+    })
+    const data = await res.json()
+    if (data.success) {
+      resetSuccess.value = '游戏已重置'
+      messages.value = []
+    } else {
+      resetError.value = data.message || '重置失败'
+    }
+  } catch { resetError.value = '网络错误' }
+  finally { resetLoading.value = false }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('token')
+  sessionStorage.removeItem('userId')
+  if (ws) ws.close()
+  window.location.href = '/'
 }
 
 onMounted(() => {
@@ -582,4 +723,69 @@ onUnmounted(() => {
 .message-area {
   scrollbar-width: thin;
   scrollbar-color: rgba(240, 217, 160, 0.25) rgba(255, 255, 255, 0.03);
+}
+/* Settings Bar */
+.settings-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 8px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.settings-welcome {
+  color: #f0d9a0;
+  font-size: 14px;
+  margin-right: auto;
+}
+.settings-btn {
+  --el-button-bg-color: rgba(255,255,255,0.05);
+  --el-button-border-color: rgba(255,255,255,0.1);
+  --el-button-text-color: #ccc;
+  --el-button-hover-bg-color: rgba(255,255,255,0.1);
+  --el-button-hover-text-color: #fff;
+}
+
+/* Settings Dialog */
+.settings-dialog :deep(.el-dialog__header) {
+  color: #f0d9a0;
+}
+.settings-dialog :deep(.el-dialog__body) {
+  padding: 20px;
+}
+.settings-dialog :deep(.el-tabs__item) {
+  color: #888;
+}
+.settings-dialog :deep(.el-tabs__item.is-active) {
+  color: #f0d9a0;
+}
+.settings-dialog :deep(.el-tabs__active-bar) {
+  background-color: #f0d9a0;
+}
+.settings-form {
+  padding: 8px 0;
+}
+.settings-form :deep(.el-form-item__label) {
+  color: #aaa;
+}
+.settings-form :deep(.el-input__wrapper) {
+  background: rgba(255,255,255,0.05);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.1) inset;
+}
+.settings-form :deep(.el-input__inner) {
+  color: #fff;
+}
+.settings-error {
+  color: #f56c6c;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.settings-success {
+  color: #67c23a;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.settings-submit {
+  width: 100%;
+  margin-top: 8px;
 }</style>

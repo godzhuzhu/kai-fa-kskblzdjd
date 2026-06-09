@@ -5,6 +5,7 @@ import cn.edu.whut.sept.zuul.game.item.Items;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -16,6 +17,13 @@ import java.util.Set;
  * @since 1.0
  */
 public class Room {
+
+    private static final Map<String, String> DIR_MAP = Map.of(
+        "north", "北", "south", "南", "east", "东", "west", "西",
+        "up", "上", "down", "下",
+        "northeast", "东北", "northwest", "西北",
+        "southeast", "东南", "southwest", "西南"
+    );
 
     private final String name;
     private final String description;
@@ -53,18 +61,18 @@ public class Room {
      * 获取房间完整描述，拼接名称、描述、物品列表和出口。
      *
      * <pre>
-     * 物品列表格式：Items: Sword(8kg), BloodVial(2kg)
-     * 出口格式：  Exits: east, west
+     * 物品列表格式：物品: Sword(8kg), BloodVial(2kg)
+     * 出口格式：  出口: 东, 西
      * </pre>
      *
      * @return 完整描述字符串
      */
     public String getLongDescription() {
         StringBuilder sb = new StringBuilder();
-        sb.append(name).append("\n").append(description);
+        sb.append(description);
 
         if (!items.isEmpty()) {
-            sb.append("\nItems: ");
+            sb.append("\n物品: ");
             List<String> itemDescs = new ArrayList<>();
             for (AbstractItem item : items) {
                 itemDescs.add(item.getName() + "(" + item.getWeight() + "kg)");
@@ -74,7 +82,11 @@ public class Room {
 
         Set<String> exitSet = exits.keySet();
         if (!exitSet.isEmpty()) {
-            sb.append("\nExits: ").append(String.join(", ", exitSet));
+            List<String> translatedExits = new ArrayList<>();
+            for (String exit : exitSet) {
+                translatedExits.add(DIR_MAP.getOrDefault(exit, exit));
+            }
+            sb.append("\n出口: ").append(String.join(", ", translatedExits));
         }
 
         return sb.toString();
@@ -100,7 +112,6 @@ public class Room {
      */
     public Room getExit(String direction) {
         if (portal) {
-            // 传送房间：忽略方向，随机返回一个出口
             List<Room> values = new ArrayList<>(exits.values());
             if (values.isEmpty()) {
                 return null;

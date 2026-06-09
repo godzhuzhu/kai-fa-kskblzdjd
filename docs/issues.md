@@ -860,6 +860,193 @@ GitHub Actions 自动构建 Docker 镜像，打 tag 时推送镜像仓库。
 
 ---
 
+## 2D Game — 网页 2D 游戏版
+
+---
+
+### #25 Room 2D 地图系统
+
+**Assignee:** gmy
+**Milestone:** 2d-game
+**Labels:** enhancement
+
+```
+## 任务描述
+为 Room 添加 2D 瓦片地图数据，支持墙壁/地板/门/物品坐标。
+
+## 子任务
+- [ ] Room 新增 width/height/tiles[][] 字段
+- [ ] 定义瓦片类型：FLOOR(0)/WALL(1)/DOOR(2)
+- [ ] DoorTiles Map 映射门位置到出口方向
+- [ ] itemSpawns Map 映射物品出生坐标
+- [ ] 5 个房间预设地图数据
+- [ ] isWalkable(x,y) 碰撞检测方法
+- [ ] getDoorDirection(x,y) 门方向查询
+- [ ] 修改 RoomVO 输出 tiles 和 items 坐标
+
+## 验收标准
+- 房间有完整 15×10 瓦片地图
+- 墙壁不可通行
+- 门位置正确映射到相邻房间
+```
+
+---
+
+### #26 Player 2D 坐标 + 碰撞检测
+
+**Assignee:** gmy
+**Milestone:** 2d-game
+**Labels:** enhancement
+
+```
+## 任务描述
+Player 新增房间内坐标，后端实现移动碰撞检测和门触发。
+
+## 子任务
+- [ ] Player 新增 posX/posY 字段
+- [ ] GameWebSocketHandler 处理 move action
+- [ ] 碰撞检测：撞墙拒绝、地板更新、门→切换房间
+- [ ] 房间切换时设置玩家出生坐标
+- [ ] playerPush 包含 posX/posY
+- [ ] roomPush 包含 tiles[][] 和 items[{x,y}]
+
+## 验收标准
+- 键盘移动，后端碰撞检测正确
+- 走到门上切换房间
+- 坐标正确推送给前端
+```
+
+---
+
+### #27 前端 Canvas 2D 渲染引擎
+
+**Assignee:** zy
+**Milestone:** 2d-game
+**Labels:** frontend
+
+```
+## 任务描述
+用 Canvas API 实现 2D 瓦片地图渲染引擎。
+
+## 子任务
+- [ ] 创建 Canvas 画布，设置 32px 瓦片大小
+- [ ] 绘制地板/墙壁/门瓦片
+- [ ] 绘制玩家精灵（自己绿色，他人蓝色）
+- [ ] 绘制物品精灵在地图上
+- [ ] 60fps 渲染循环 requestAnimationFrame
+- [ ] 根据 roomPush 更新地图和物品显示
+
+## 验收标准
+- 地图正确渲染
+- 多个玩家同时可见
+- 物品可见且位于正确坐标
+```
+
+---
+
+### #28 键盘输入 + 房间切换
+
+**Assignee:** gmy
+**Milestone:** 2d-game
+**Labels:** enhancement
+
+```
+## 任务描述
+WASD 键盘控制移动，走到门自动切换房间。
+
+## 子任务
+- [ ] 前端监听 keydown/keyup 事件
+- [ ] 移动冷却 150ms 防重复发送
+- [ ] 发送 move action 到后端
+- [ ] 收到 roomPush 房间名变化时切换地图
+- [ ] 房间切换 100ms 黑屏过渡
+- [ ] 传送房间紫色特效
+
+## 验收标准
+- WASD 流畅移动
+- 走到门自动进入相邻房间
+- 传送房间有视觉特效
+```
+
+---
+
+### #29 物品 2D 渲染 + 交互
+
+**Assignee:** gmy
+**Milestone:** 2d-game
+**Labels:** enhancement
+
+```
+## 任务描述
+物品渲染在地图上，空格拾取，I 键背包。
+
+## 子任务
+- [ ] 前端发送 interact action（空格键）
+- [ ] 后端 scan foot position → take item → 推送更新
+- [ ] 物品从地图移除动画
+- [ ] I 键弹出背包面板
+- [ ] 背包内 Drop/Use 按钮
+- [ ] 快捷键 1-4 使用背包物品
+
+## 验收标准
+- 走到物品上按空格拾取
+- 物品从地图消失，进入背包
+- 背包面板正确显示和使用
+```
+
+---
+
+### #30 前端 HUD + UI 重构
+
+**Assignee:** zy
+**Milestone:** 2d-game
+**Labels:** frontend
+
+```
+## 任务描述
+游戏 HUD 界面：顶栏状态、底栏快捷栏、消息区。
+
+## 子任务
+- [ ] 顶栏：血量条、攻击、防御、房间名
+- [ ] 底栏：快捷物品栏（1-4 键）
+- [ ] 消息区：滚动显示系统消息
+- [ ] 右上角小地图缩略图
+- [ ] 排行榜/聊天窗口（可选）
+
+## 验收标准
+- HUD 实时显示玩家状态
+- 快捷键 1-4 使用物品
+- 消息区滚动显示
+```
+
+---
+
+### #31 动画特效
+
+**Assignee:** gmy
+**Milestone:** 2d-game
+**Labels:** enhancement
+
+```
+## 任务描述
+游戏视觉效果：切换房间过渡、传送特效、受伤闪烁。
+
+## 子任务
+- [ ] 房间切换：黑屏 100ms → 淡入 200ms
+- [ ] 传送：紫色粒子爆发 + 黑屏
+- [ ] 受伤：屏幕红色闪烁 + 精灵闪动
+- [ ] 拾取：物品缩小消失
+- [ ] 战斗命中：目标闪动红色
+- [ ] 使用道具：绿色粒子效果
+
+## 验收标准
+- 房间切换有过渡动画
+- 传送有视觉特效
+- 战斗和物品交互有反馈效果
+```
+
+---
+
 ## Issue 汇总表
 
 | 编号 | 标题 | 负责人 | 里程碑 |
@@ -888,3 +1075,10 @@ GitHub Actions 自动构建 Docker 镜像，打 tag 时推送镜像仓库。
 | #22 | Nginx 反向代理 + 前端静态托管 | gmy | deploy |
 | #23 | 配置外部化 + 安全加固 | gmy | deploy |
 | #24 | CI/CD 构建 Docker 镜像 | gmy | deploy |
+| #25 | Room 2D 地图系统 | gmy | 2d-game |
+| #26 | Player 2D 坐标 + 碰撞检测 | gmy | 2d-game |
+| #27 | 前端 Canvas 2D 渲染引擎 | zy | 2d-game |
+| #28 | 键盘输入 + 房间切换 | gmy | 2d-game |
+| #29 | 物品 2D 渲染 + 交互 | gmy | 2d-game |
+| #30 | 前端 HUD + UI 重构 | zy | 2d-game |
+| #31 | 动画特效 | gmy | 2d-game |

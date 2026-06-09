@@ -130,10 +130,10 @@
         <el-tab-pane label="修改密码" name="password">
           <el-form label-position="top" class="settings-form">
             <el-form-item label="旧密码">
-              <el-input v-model="pwForm.oldPassword" type="password" show-password placeholder="输入旧密码" />
+              <el-input class="settings-input" v-model="pwForm.oldPassword" type="password" show-password placeholder="输入旧密码" />
             </el-form-item>
             <el-form-item label="新密码">
-              <el-input v-model="pwForm.newPassword" type="password" show-password placeholder="至少6位" />
+              <el-input class="settings-input" v-model="pwForm.newPassword" type="password" show-password placeholder="至少6位" />
             </el-form-item>
             <p v-if="pwError" class="settings-error">{{ pwError }}</p>
             <p v-if="pwSuccess" class="settings-success">{{ pwSuccess }}</p>
@@ -143,7 +143,7 @@
         <el-tab-pane label="修改名称" name="name">
           <el-form label-position="top" class="settings-form">
             <el-form-item label="玩家名称">
-              <el-input v-model="nameForm.playerName" placeholder="输入新名称" />
+              <el-input class="settings-input" v-model="nameForm.playerName" placeholder="输入新名称" />
             </el-form-item>
             <p v-if="nameError" class="settings-error">{{ nameError }}</p>
             <p v-if="nameSuccess" class="settings-success">{{ nameSuccess }}</p>
@@ -416,9 +416,10 @@ async function doResetGame() {
 }
 
 function doLogout() {
+  stopHeartbeat()
+  if (ws) { ws.onclose = null; ws.close() }
   sessionStorage.removeItem('token')
   sessionStorage.removeItem('userId')
-  if (ws) ws.close()
   window.location.href = '/'
 }
 
@@ -746,35 +747,86 @@ onUnmounted(() => {
   --el-button-hover-text-color: #fff;
 }
 
-/* Settings Dialog */
+
+/* Settings Dialog - Dark Fantasy Theme */
+.settings-dialog :deep(.el-dialog) {
+  background: rgba(20, 20, 30, 0.98);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  backdrop-filter: blur(12px);
+}
 .settings-dialog :deep(.el-dialog__header) {
+  color: #f0d9a0;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  margin-right: 0;
+  padding-bottom: 16px;
+}
+.settings-dialog :deep(.el-dialog__headerbtn .el-dialog__close) {
+  color: #888;
+}
+.settings-dialog :deep(.el-dialog__headerbtn:hover .el-dialog__close) {
   color: #f0d9a0;
 }
 .settings-dialog :deep(.el-dialog__body) {
   padding: 20px;
 }
+.settings-dialog :deep(.el-dialog__footer) {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding-top: 16px;
+}
+
+/* Tabs */
+.settings-dialog :deep(.el-tabs__header) {
+  margin-bottom: 8px;
+}
+.settings-dialog :deep(.el-tabs__nav-wrap::after) {
+  background-color: rgba(255,255,255,0.06);
+  height: 1px;
+}
 .settings-dialog :deep(.el-tabs__item) {
-  color: #888;
+  color: #666;
+  font-size: 14px;
+  height: 36px;
+  line-height: 36px;
 }
 .settings-dialog :deep(.el-tabs__item.is-active) {
   color: #f0d9a0;
 }
+.settings-dialog :deep(.el-tabs__item:hover) {
+  color: #aaa;
+}
 .settings-dialog :deep(.el-tabs__active-bar) {
   background-color: #f0d9a0;
 }
+
+/* Form */
 .settings-form {
   padding: 8px 0;
 }
 .settings-form :deep(.el-form-item__label) {
   color: #aaa;
+  font-size: 13px;
+  padding-bottom: 4px;
 }
-.settings-form :deep(.el-input__wrapper) {
-  background: rgba(255,255,255,0.05);
+
+/* Input - use CSS variables like command-input */
+.settings-input {
+  --el-input-bg-color: rgba(255,255,255,0.05);
+  --el-input-border-color: rgba(255,255,255,0.12);
+  --el-input-text-color: #e0e0e0;
+  --el-input-placeholder-color: rgba(255,255,255,0.3);
+  --el-input-hover-border-color: #f0d9a0;
+  --el-input-focus-border-color: #f0d9a0;
+}
+.settings-input :deep(.el-input__wrapper) {
   box-shadow: 0 0 0 1px rgba(255,255,255,0.1) inset;
 }
-.settings-form :deep(.el-input__inner) {
-  color: #fff;
+.settings-input :deep(.el-input__inner) {
+  color: #e0e0e0;
 }
+
+/* Messages */
 .settings-error {
   color: #f56c6c;
   font-size: 13px;
@@ -788,4 +840,8 @@ onUnmounted(() => {
 .settings-submit {
   width: 100%;
   margin-top: 8px;
+  --el-button-bg-color: #c4a35a;
+  --el-button-border-color: #c4a35a;
+  --el-button-hover-bg-color: #d4b36a;
+  --el-button-hover-border-color: #d4b36a;
 }</style>

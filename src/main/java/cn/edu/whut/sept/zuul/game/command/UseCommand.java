@@ -7,14 +7,6 @@ import cn.edu.whut.sept.zuul.game.item.AbstractItem;
 import cn.edu.whut.sept.zuul.game.message.SinglePlayerMessage;
 import java.util.List;
 
-/**
- * UseCommand — 使用物品命令。
- *
- * <p>使用背包中的道具类物品，装备不可使用。</p>
- *
- * @author gmy
- * @since 1.0
- */
 public class UseCommand extends Command {
 
     @Override
@@ -44,6 +36,13 @@ public class UseCommand extends Command {
                 || target.getClass().getSimpleName().equals("DragonscaleBulwark")
                 || target.getClass().getSimpleName().equals("StormCleaver")) {
             game.getMessageBridge().send(new SinglePlayerMessage("Cannot use equipment."), player);
+            return false;
+        }
+
+        if (target.getClass().getSimpleName().equals("BloodVial")
+                && player.getCurrentHealth() >= player.getMaxHealth()) {
+            game.getMessageBridge().send(new SinglePlayerMessage(
+                    "Your health is already full. Cannot use " + target.getName() + "."), player);
             return false;
         }
 

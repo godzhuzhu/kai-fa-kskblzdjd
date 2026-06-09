@@ -8,6 +8,7 @@
       <el-button class="settings-btn" @click="settingsVisible = true">
         <el-icon><Setting /></el-icon> 设置
       </el-button>
+      <el-button class="quit-btn" @click="doLogout">退出</el-button>
     </div>
     <div v-if="disconnected" class="reconnect-banner">
       连接断开。<a href="#" @click.prevent="reconnect">点击重新连接</a>
@@ -770,7 +771,15 @@ onUnmounted(() => {
   --el-button-hover-bg-color: rgba(255,255,255,0.1);
   --el-button-hover-text-color: #fff;
 }
-
+.quit-btn {
+  margin-left: 8px;
+  --el-button-bg-color: rgba(245, 108, 108, 0.15);
+  --el-button-border-color: rgba(245, 108, 108, 0.3);
+  --el-button-text-color: #f56c6c;
+  --el-button-hover-bg-color: rgba(245, 108, 108, 0.25);
+  --el-button-hover-border-color: #f56c6c;
+  --el-button-hover-text-color: #f56c6c;
+}
 
 /* Settings Dialog - Dark Fantasy Theme */
 .settings-dialog :deep(.el-dialog) {

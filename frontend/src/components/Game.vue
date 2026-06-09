@@ -118,7 +118,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
-const WS_URL = 'ws://localhost:8080/game/websocket'
+const WS_URL = `ws://${window.location.hostname === 'localhost' ? 'localhost:8080' : window.location.host}/game/websocket`
 
 const player = reactive<any>({
   userId: 0, playerName: '', attack: 0, defense: 0,

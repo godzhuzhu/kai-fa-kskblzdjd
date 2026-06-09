@@ -13,6 +13,9 @@ public class RoomVO {
     private List<String> exits;
     private List<RoomPlayerVO> players;
     private boolean portal;
+    private int[][] tiles;
+    private int posX;
+    private int posY;
 
     public static RoomVO from(Room r, List<RoomPlayerVO> players) {
         RoomVO vo = new RoomVO();
@@ -25,6 +28,7 @@ public class RoomVO {
         }
         vo.exits = new ArrayList<>(r.getExits());
         vo.players = players;
+        vo.tiles = r.getTiles();
         return vo;
     }
 
@@ -40,4 +44,6 @@ public class RoomVO {
     public void setPlayers(List<RoomPlayerVO> players) { this.players = players; }
     public boolean isPortal() { return portal; }
     public void setPortal(boolean portal) { this.portal = portal; }
+    public int[][] getTiles() { return tiles; }
+    public void setTiles(int[][] tiles) { this.tiles = tiles; }
 }

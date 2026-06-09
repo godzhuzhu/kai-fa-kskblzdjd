@@ -17,6 +17,8 @@ public class PlayerVO {
     private int currentLoad;
     private List<BagItemVO> bag;
     private String currentRoomName;
+    private int posX;
+    private int posY;
 
     public static PlayerVO from(Player p) {
         PlayerVO vo = new PlayerVO();
@@ -29,6 +31,8 @@ public class PlayerVO {
         vo.maxCapacity = p.getMaxCapacity();
         vo.currentLoad = p.getCurrentLoad();
         vo.currentRoomName = p.getCurrentRoom().getName();
+        vo.posX = p.getPosX();
+        vo.posY = p.getPosY();
         vo.bag = new ArrayList<>();
         for (AbstractItem i : p.getBag()) {
             vo.bag.add(new BagItemVO(i.getName(), i.getWeight()));
@@ -56,4 +60,8 @@ public class PlayerVO {
     public void setBag(List<BagItemVO> bag) { this.bag = bag; }
     public String getCurrentRoomName() { return currentRoomName; }
     public void setCurrentRoomName(String currentRoomName) { this.currentRoomName = currentRoomName; }
+    public int getPosX() { return posX; }
+    public void setPosX(int posX) { this.posX = posX; }
+    public int getPosY() { return posY; }
+    public void setPosY(int posY) { this.posY = posY; }
 }

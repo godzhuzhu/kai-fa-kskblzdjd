@@ -1,8 +1,10 @@
 package cn.edu.whut.sept.zuul.game.websocket;
 
 import cn.edu.whut.sept.zuul.Game;
+import cn.edu.whut.sept.zuul.game.Direction;
 import cn.edu.whut.sept.zuul.game.Player;
 import cn.edu.whut.sept.zuul.game.Room;
+import cn.edu.whut.sept.zuul.game.item.AbstractItem;
 import cn.edu.whut.sept.zuul.game.message.GameMessageBridge;
 import cn.edu.whut.sept.zuul.game.user.security.JwtUtil;
 import cn.edu.whut.sept.zuul.game.websocket.vo.PlayerVO;
@@ -102,6 +104,116 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             roomPush(player.getCurrentRoom());
             messagePush(player, game.getLastCommandOutput());
         }
+
+        if ("move".equals(action)) {
+            handleMove(gameSession.getPlayer(), payload);
+        }
+
+        if ("interact".equals(action)) {
+            handleInteract(gameSession.getPlayer());
+        }
+
+        if ("drop".equals(action)) {
+            handleDrop(gameSession.getPlayer(), payload.getData());
+        }
+
+        if ("use".equals(action)) {
+            handleUse(gameSession.getPlayer(), payload.getData());
+        }
+
+        if ("attack".equals(action)) {
+            handleAttack(gameSession.getPlayer(), payload.getData());
+        }
+    }
+
+    private void handleMove(Player player, WebSocketIncomingPayload payload) {
+        String dataStr = payload.getData();
+        if (dataStr == null) return;
+        try {
+            com.fasterxml.jackson.databind.JsonNode node = objectMapper.readTree(dataStr);
+            int dx = node.has("dx") ? node.get("dx").asInt() : 0;
+            int dy = node.has("dy") ? node.get("dy").asInt() : 0;
+
+            int newX = player.getPosX() + dx;
+            int newY = player.getPosY() + dy;
+            Room currentRoom = player.getCurrentRoom();
+
+            if (!currentRoom.isWalkable(newX, newY)) {
+                return;
+            }
+
+            Direction doorDir = currentRoom.getDoorDirection(newX, newY);
+            if (doorDir != null) {
+                Room nextRoom = currentRoom.getExitMap().get(doorDir.toLower());
+                if (nextRoom == null) return;
+                if (nextRoom.isPortal()) {
+                    Room randomRoom = game.getRandomRoom();
+                    if (randomRoom != null) {
+                        nextRoom = randomRoom;
+                    }
+                }
+                player.moveTo(nextRoom);
+                int[] sp = nextRoom.getSpawnPoint();
+                player.setPosX(sp[0]);
+                player.setPosY(sp[1]);
+            } else {
+                player.setPosX(newX);
+                player.setPosY(newY);
+            }
+
+            playerPush(player);
+            roomPush(player.getCurrentRoom());
+        } catch (Exception ignored) {
+        }
+    }
+
+    private void handleInteract(Player player) {
+        Room currentRoom = player.getCurrentRoom();
+        AbstractItem item = currentRoom.takeItemAt(player.getPosX(), player.getPosY());
+        if (item != null && player.takeItem(item)) {
+            messagePush(player, "You picked up " + item.getName() + ".");
+        }
+        playerPush(player);
+        roomPush(player.getCurrentRoom());
+    }
+
+    private void handleDrop(Player player, String itemName) {
+        if (itemName == null) return;
+        for (AbstractItem item : player.getBag()) {
+            if (item.getName().equals(itemName)) {
+                player.dropItem(item);
+                Room room = player.getCurrentRoom();
+                int x = player.getPosX();
+                int y = player.getPosY() + 1;
+                if (!room.isWalkable(x, y)) { x = player.getPosX(); y = player.getPosY() - 1; }
+                if (!room.isWalkable(x, y)) { x = player.getPosX() + 1; y = player.getPosY(); }
+                if (!room.isWalkable(x, y)) { x = player.getPosX() - 1; y = player.getPosY(); }
+                room.placeItem(item, x, y);
+                messagePush(player, "You dropped " + itemName + ".");
+                break;
+            }
+        }
+        playerPush(player);
+        roomPush(player.getCurrentRoom());
+    }
+
+    private void handleUse(Player player, String itemName) {
+        if (itemName == null) return;
+        for (AbstractItem item : player.getBag()) {
+            if (item.getName().equals(itemName)) {
+                player.useItem(item);
+                messagePush(player, "You used " + itemName + ".");
+                break;
+            }
+        }
+        playerPush(player);
+        roomPush(player.getCurrentRoom());
+    }
+
+    private void handleAttack(Player player, String targetName) {
+        game.processCommand(player, "attack " + targetName);
+        playerPush(player);
+        roomPush(player.getCurrentRoom());
     }
 
     @Override

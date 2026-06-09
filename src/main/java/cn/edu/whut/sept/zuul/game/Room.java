@@ -23,18 +23,23 @@ public class Room {
     private final HashMap<String, Room> exits;
     private final List<AbstractItem> items;
 
-    /**
-     * 创建一个房间。
-     *
-     * @param name        房间名称（唯一标识）
-     * @param description 房间描述
-     */
+    // 2D 瓦片地图 (#25)
+    private int width;
+    private int height;
+    private int[][] tiles;
+    private final HashMap<String, int[]> itemSpawns;
+    private int[] spawnPoint;
+
     public Room(String name, String description) {
         this.name = name;
         this.description = description;
         this.portal = false;
         this.exits = new HashMap<>();
         this.items = new ArrayList<>();
+        this.itemSpawns = new HashMap<>();
+        this.width = 15;
+        this.height = 10;
+        this.spawnPoint = new int[]{1, 1};
     }
 
     // ========== 基本信息 — #5 #6 调用 ==========
@@ -143,15 +148,6 @@ public class Room {
     }
 
     /**
-     * 添加物品到房间。
-     *
-     * @param item 要添加的物品
-     */
-    public void addItem(AbstractItem item) {
-        items.add(item);
-    }
-
-    /**
      * 按名称移除物品。
      *
      * @param name 物品名称
@@ -216,5 +212,75 @@ public class Room {
             return null;
         }
         return candidates.get((int) (Math.random() * candidates.size()));
+    }
+
+    // ========== 2D 瓦片地图 (#25) ==========
+
+    public int getWidth() { return width; }
+    public void setWidth(int width) { this.width = width; }
+
+    public int getHeight() { return height; }
+    public void setHeight(int height) { this.height = height; }
+
+    public int[][] getTiles() { return tiles; }
+
+    public void setTiles(int[][] tiles) { this.tiles = tiles; }
+
+    public int[] getSpawnPoint() { return spawnPoint; }
+    public void setSpawnPoint(int x, int y) { this.spawnPoint = new int[]{x, y}; }
+
+    public boolean isWalkable(int x, int y) {
+        if (x < 0 || x >= width || y < 0 || y >= height) return false;
+        return tiles[y][x] != TileType.WALL;
+    }
+
+    public Direction getDoorDirection(int x, int y) {
+        if (x < 0 || x >= width || y < 0 || y >= height) return null;
+        return TileType.toDirection(tiles[y][x]);
+    }
+
+    public boolean hasItemAt(int x, int y) {
+        for (AbstractItem item : items) {
+            int[] pos = itemSpawns.get(item.getName());
+            if (pos != null && pos[0] == x && pos[1] == y) return true;
+        }
+        return false;
+    }
+
+    public AbstractItem takeItemAt(int x, int y) {
+        for (AbstractItem item : new ArrayList<>(items)) {
+            int[] pos = itemSpawns.get(item.getName());
+            if (pos != null && pos[0] == x && pos[1] == y) {
+                items.remove(item);
+                itemSpawns.remove(item.getName());
+                return item;
+            }
+        }
+        return null;
+    }
+
+    public void placeItem(AbstractItem item, int x, int y) {
+        items.add(item);
+        itemSpawns.put(item.getName(), new int[]{x, y});
+    }
+
+    public int[] getItemPosition(String itemName) {
+        for (AbstractItem item : items) {
+            if (item.getName().equals(itemName)) {
+                return itemSpawns.get(itemName);
+            }
+        }
+        return null;
+    }
+
+    public void addItem(AbstractItem item) {
+        items.add(item);
+        int x = 1 + (int) (Math.random() * (width - 2));
+        int y = 1 + (int) (Math.random() * (height - 2));
+        while (!isWalkable(x, y)) {
+            x = 1 + (int) (Math.random() * (width - 2));
+            y = 1 + (int) (Math.random() * (height - 2));
+        }
+        itemSpawns.put(item.getName(), new int[]{x, y});
     }
 }

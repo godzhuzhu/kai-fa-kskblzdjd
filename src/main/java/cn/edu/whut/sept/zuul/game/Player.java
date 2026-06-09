@@ -39,6 +39,10 @@ public class Player {
     // 在线状态（v2.0 #9 启用）
     private boolean isOnline;
 
+    // 2D 坐标 (#26)
+    private int posX;
+    private int posY;
+
     // 事件监听（v2.0 #11 启用）
     private final List<IPlayerListener> listeners;
     private long lastAttackTime;
@@ -55,6 +59,8 @@ public class Player {
         this.currentHealth = 100;
         this.maxHealth = 100;
         this.isOnline = false;
+        this.posX = 1;
+        this.posY = 1;
         this.listeners = new ArrayList<>();
         this.lastAttackTime = 0;
     }
@@ -236,4 +242,11 @@ public class Player {
     public void setLastAttackTime(long lastAttackTime) {
         this.lastAttackTime = lastAttackTime;
     }
+
+    // ========== 2D 坐标 ==========
+
+    public int getPosX() { return posX; }
+    public void setPosX(int posX) { this.posX = posX; }
+    public int getPosY() { return posY; }
+    public void setPosY(int posY) { this.posY = posY; }
 }

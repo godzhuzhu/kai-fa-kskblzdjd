@@ -12,6 +12,9 @@ public class Sword extends AbstractItem {
 
     public Sword() {
         super("Sword", "A sharp iron sword (+10 attack)", 8);
+        setAttackRange(1);
+        setAttackCooldown(500);
+        setAttackType("melee");
     }
 
     @Override

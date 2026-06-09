@@ -35,7 +35,7 @@ public class PlayerVO {
         vo.posY = p.getPosY();
         vo.bag = new ArrayList<>();
         for (AbstractItem i : p.getBag()) {
-            vo.bag.add(new BagItemVO(i.getName(), i.getWeight()));
+            vo.bag.add(new BagItemVO(i.getName(), i.getWeight(), i.getAttackRange(), i.getAttackType()));
         }
         return vo;
     }

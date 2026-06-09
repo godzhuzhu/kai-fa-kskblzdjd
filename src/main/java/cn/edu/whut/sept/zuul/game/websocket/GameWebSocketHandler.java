@@ -66,6 +66,17 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         Player player = game.getOrCreatePlayer(userId);
         player.setOnline(true);
 
+        int[] sp = player.getCurrentRoom().getSpawnPoint();
+        player.setPosX(sp[0]);
+        player.setPosY(sp[1]);
+
+        GameSession existing = playerSessions.remove(userId);
+        if (existing != null) {
+            sessions.remove(existing.getWebSocketSession().getId());
+            existing.getPlayer().setOnline(false);
+            try { existing.getWebSocketSession().close(); } catch (Exception ignored) {}
+        }
+
         GameSession gameSession = new GameSession(player, session);
         sessions.put(session.getId(), gameSession);
         playerSessions.put(userId, gameSession);
@@ -122,7 +133,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         }
 
         if ("attack".equals(action)) {
-            handleAttack(gameSession.getPlayer(), payload.getData());
+            try {
+                com.fasterxml.jackson.databind.JsonNode n = objectMapper.readTree(payload.getData());
+                handleAttack(gameSession.getPlayer(), n.get("dx").asInt(), n.get("dy").asInt());
+            } catch (Exception e) {
+                handleAttack(gameSession.getPlayer(), payload.getData());
+            }
         }
     }
 
@@ -201,8 +217,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         if (itemName == null) return;
         for (AbstractItem item : player.getBag()) {
             if (item.getName().equals(itemName)) {
+                if (item.isWeapon()) {
+                    messagePush(player, itemName + " is a weapon. Pick it up to equip.");
+                    return;
+                }
                 player.useItem(item);
-                messagePush(player, "You used " + itemName + ".");
+                messagePush(player, "Used " + itemName + ".");
                 break;
             }
         }
@@ -214,6 +234,69 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         game.processCommand(player, "attack " + targetName);
         playerPush(player);
         roomPush(player.getCurrentRoom());
+    }
+
+    private void handleAttack(Player attacker, int dx, int dy) {
+        long now = System.currentTimeMillis();
+
+        AbstractItem weapon = null;
+        int maxRange = 1;
+        int cooldown = 300;
+        String atkType = "melee";
+        for (AbstractItem item : attacker.getBag()) {
+            if (item.isWeapon() && item.getAttackRange() > maxRange) {
+                weapon = item;
+                maxRange = item.getAttackRange();
+                cooldown = item.getAttackCooldown();
+                atkType = item.getAttackType();
+            }
+        }
+        if (now - attacker.getLastAttackTime() < cooldown) return;
+        attacker.setLastAttackTime(now);
+
+        int totalDamage = attacker.getAttack();
+        Room room = attacker.getCurrentRoom();
+
+        if ("melee".equals(atkType)) {
+            int tx = attacker.getPosX() + dx, ty = attacker.getPosY() + dy;
+            hitPlayer(attacker, room, tx, ty, totalDamage);
+        } else if ("ranged".equals(atkType)) {
+            for (int i = 1; i <= maxRange; i++) {
+                int tx = attacker.getPosX() + dx * i, ty = attacker.getPosY() + dy * i;
+                if (!room.isWalkable(tx, ty)) break;
+                if (hitPlayer(attacker, room, tx, ty, totalDamage)) break;
+            }
+        } else if ("aoe".equals(atkType)) {
+            for (int ox = -1; ox <= 1; ox++)
+                for (int oy = -1; oy <= 1; oy++)
+                    hitPlayer(attacker, room, attacker.getPosX() + ox, attacker.getPosY() + oy, totalDamage / 2);
+        }
+
+        playerPush(attacker);
+        roomPush(room);
+    }
+
+    private boolean hitPlayer(Player attacker, Room room, int tx, int ty, int damage) {
+        for (Player p : getPlayersInRoom(room, attacker)) {
+            if (p.getPosX() == tx && p.getPosY() == ty) {
+                int dmg = Math.max(1, damage - p.getDefense());
+                p.hurtBy(dmg);
+                if (p.isDead()) {
+                    for (AbstractItem item : new ArrayList<>(p.getBag())) {
+                        p.dropItem(item);
+                        room.placeItem(item, p.getPosX(), p.getPosY());
+                    }
+                    p.setCurrentHealth(p.getMaxHealth());
+                    p.setAttack(10); p.setDefense(5);
+                    int[] sp = p.getCurrentRoom().getSpawnPoint();
+                    p.setPosX(sp[0]); p.setPosY(sp[1]);
+                }
+                messagePush(attacker, "Hit " + p.getPlayerName() + " for " + dmg + " damage!");
+                messagePush(p, attacker.getPlayerName() + " hit you for " + dmg + " damage!");
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

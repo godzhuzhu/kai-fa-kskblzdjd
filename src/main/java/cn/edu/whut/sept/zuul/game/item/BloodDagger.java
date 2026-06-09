@@ -10,6 +10,9 @@ public class BloodDagger extends AbstractItem implements IPlayerListener {
 
     public BloodDagger() {
         super("BloodDagger", "A blood-thirsty dagger (heal 20 HP on kill)", 4);
+        setAttackRange(1);
+        setAttackCooldown(400);
+        setAttackType("melee");
     }
 
     @Override

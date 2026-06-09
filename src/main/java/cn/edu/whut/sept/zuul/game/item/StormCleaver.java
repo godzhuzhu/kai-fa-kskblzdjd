@@ -12,6 +12,9 @@ public class StormCleaver extends AbstractItem {
 
     public StormCleaver() {
         super("StormCleaver", "A legendary blade crackling with lightning (+15 attack)", 12);
+        setAttackRange(2);
+        setAttackCooldown(800);
+        setAttackType("ranged");
     }
 
     @Override

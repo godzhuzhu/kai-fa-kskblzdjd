@@ -25,5 +25,6 @@ public class MagicCookie extends AbstractItem {
     @Override
     public void usedBy(Player player) {
         player.setMaxCapacity(player.getMaxCapacity() + 20);
+        player.removeFromBag(this);
     }
 }

@@ -38,7 +38,7 @@ public class ImmortalCore extends AbstractItem implements IPlayerListener {
             used = true;
             player.setCurrentHealth(1);
             player.removeListener(this);
-            player.getBag().remove(this);
+            player.removeFromBag(this);
         }
     }
 

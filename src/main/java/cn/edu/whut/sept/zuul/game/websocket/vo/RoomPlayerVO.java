@@ -11,6 +11,8 @@ public class RoomPlayerVO {
     private String playerName;
     private int currentHealth;
     private int maxHealth;
+    private int posX;
+    private int posY;
 
     public static RoomPlayerVO from(Player p) {
         RoomPlayerVO vo = new RoomPlayerVO();
@@ -18,6 +20,8 @@ public class RoomPlayerVO {
         vo.playerName = p.getPlayerName();
         vo.currentHealth = p.getCurrentHealth();
         vo.maxHealth = p.getMaxHealth();
+        vo.posX = p.getPosX();
+        vo.posY = p.getPosY();
         return vo;
     }
 
@@ -37,4 +41,8 @@ public class RoomPlayerVO {
     public void setCurrentHealth(int currentHealth) { this.currentHealth = currentHealth; }
     public int getMaxHealth() { return maxHealth; }
     public void setMaxHealth(int maxHealth) { this.maxHealth = maxHealth; }
+    public int getPosX() { return posX; }
+    public void setPosX(int posX) { this.posX = posX; }
+    public int getPosY() { return posY; }
+    public void setPosY(int posY) { this.posY = posY; }
 }

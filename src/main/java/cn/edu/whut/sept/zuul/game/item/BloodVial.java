@@ -29,5 +29,6 @@ public class BloodVial extends AbstractItem {
             newHealth = player.getMaxHealth();
         }
         player.setCurrentHealth(newHealth);
+        player.removeFromBag(this);
     }
 }

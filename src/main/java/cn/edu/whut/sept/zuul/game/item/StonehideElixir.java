@@ -25,5 +25,6 @@ public class StonehideElixir extends AbstractItem {
     @Override
     public void usedBy(Player player) {
         player.setDefense(player.getDefense() + 10);
+        player.removeFromBag(this);
     }
 }

@@ -12,6 +12,9 @@ public class DragonscaleBulwark extends AbstractItem {
 
     public DragonscaleBulwark() {
         super("DragonscaleBulwark", "A shield made of dragon scales (+8 defense)", 10);
+        setAttackRange(1);
+        setAttackCooldown(1000);
+        setAttackType("aoe");
     }
 
     @Override

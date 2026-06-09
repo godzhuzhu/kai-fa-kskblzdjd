@@ -132,6 +132,10 @@ public class Player {
         return true;
     }
 
+    public void removeFromBag(AbstractItem item) {
+        bag.remove(item);
+    }
+
     // ========== 移动 ==========
 
     public void moveTo(Room room) {

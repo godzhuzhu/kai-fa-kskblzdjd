@@ -10,6 +10,9 @@ public class ShadowbaneBallista extends AbstractItem implements IPlayerListener 
 
     public ShadowbaneBallista() {
         super("ShadowbaneBallista", "A dark ballista (extra 5 damage on attack)", 6);
+        setAttackRange(3);
+        setAttackCooldown(1200);
+        setAttackType("ranged");
     }
 
     @Override

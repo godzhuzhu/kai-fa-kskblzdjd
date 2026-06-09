@@ -169,7 +169,7 @@ public class Room {
         for (int i = 0; i < count; i++) {
             AbstractItem item = Items.generateRandomItem();
             if (item != null) {
-                items.add(item);
+                this.addItem(item);
             }
         }
     }

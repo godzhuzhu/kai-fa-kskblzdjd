@@ -105,7 +105,7 @@
     </div>
 
     <!-- Item Action Dialog -->
-    <el-dialog v-model="itemDialogVisible" :title="'物品：' + (selectedItem ? selectedItem.name : '')" width="300px" top="30vh" class="item-dialog">
+    <el-dialog v-model="itemDialogVisible" :title="'物品：' + (selectedItem ? tItem(selectedItem.name) : '')" width="300px" top="30vh" class="item-dialog">
       <div class="dialog-actions">
         <el-button v-if="selectedItemInRoom" type="primary" @click="doItemAction('take')">拾取</el-button>
         <el-button v-if="!selectedItemInRoom" type="primary" @click="doItemAction('drop')">丢弃</el-button>
@@ -190,6 +190,23 @@ function tDirection(dir: string): string {
 function tItem(name: string): string {
   return itemNameMap[name] || name
 }
+const directionNames: Record<string, string> = {
+  north: '北', south: '南', east: '东', west: '西',
+  up: '上', down: '下', northeast: '东北', northwest: '西北',
+  southeast: '东南', southwest: '西南'
+}
+const roomNameMap: Record<string, string> = {
+  outside: '户外', theater: '礼堂', pub: '酒吧', lab: '实验室', office: '办公室'
+}
+function transMsg(msg: string): string {
+  let r = msg
+  r = r.replace(/\b(BloodVial|Sword|MagicCookie|StormCleaver|DragonscaleBulwark|StonehideElixir|BerserkerTotem|BloodDagger|ImmortalCore|ShadowbaneBallista)\b/g, w => tItem(w))
+  r = r.replace(/\b(north|south|east|west|up|down|northeast|northwest|southeast|southwest)\b/gi, w => directionNames[w.toLowerCase()] || w)
+  r = r.replace(/\b(outside|theater|pub|lab|office)\b/gi, w => roomNameMap[w.toLowerCase()] || w)
+  r = r.replace(/Items:/g, '物品：').replace(/Exits:/g, '出口：')
+  r = r.replace(/\((\d+)kg\)/g, '（$1kg）')
+  return r
+}
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { Setting } from '@element-plus/icons-vue'
 const WS_URL = `ws://${window.location.hostname === 'localhost' ? 'localhost:8080' : window.location.host}/game/websocket`
@@ -264,11 +281,11 @@ function connect() {
       } else if (payload.type === 'roomPush') {
         Object.assign(room, payload.data)
       } else if (payload.type === 'messagePush') {
-        messages.value.push(payload.data)
+        messages.value.push(transMsg(payload.data))
         scrollToBottom()
       }
     } catch {
-      messages.value.push(event.data)
+      messages.value.push(transMsg(event.data))
       scrollToBottom()
     }
   }

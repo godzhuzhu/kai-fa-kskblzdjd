@@ -2,27 +2,27 @@
   <div class="home-container">
     <div class="title-section">
       <h1 class="game-title">World of Zuul</h1>
-      <p class="subtitle">Embark on an epic adventure</p>
+      <p class="subtitle">开启史诗冒险</p>
     </div>
     <div class="form-card">
       <div class="tabs">
-        <button :class="['tab', { active: activeTab === 'login' }]" @click="activeTab = 'login'">Login</button>
-        <button :class="['tab', { active: activeTab === 'register' }]" @click="activeTab = 'register'">Register</button>
+        <button :class="['tab', { active: activeTab === 'login' }]" @click="activeTab = 'login'">登录</button>
+        <button :class="['tab', { active: activeTab === 'register' }]" @click="activeTab = 'register'">注册</button>
       </div>
 
       <form v-if="activeTab === 'login'" @submit.prevent="handleLogin" class="form">
-        <el-input v-model="loginForm.username" placeholder="Username" class="input" :prefix-icon="User" />
-        <el-input v-model="loginForm.password" type="password" placeholder="Password" class="input" show-password :prefix-icon="Lock" />
+        <el-input v-model="loginForm.username" placeholder="用户名" class="input" :prefix-icon="User" />
+        <el-input v-model="loginForm.password" type="password" placeholder="密码" class="input" show-password :prefix-icon="Lock" />
         <p v-if="loginError" class="error">{{ loginError }}</p>
-        <el-button type="primary" native-type="submit" class="submit-btn" :loading="loginLoading">Login</el-button>
+        <el-button type="primary" native-type="submit" class="submit-btn" :loading="loginLoading">登录</el-button>
       </form>
 
       <form v-else @submit.prevent="handleRegister" class="form">
-        <el-input v-model="registerForm.username" placeholder="Username" class="input" :prefix-icon="User" />
-        <el-input v-model="registerForm.password" type="password" placeholder="Password (min 6 characters)" class="input" show-password :prefix-icon="Lock" />
-        <el-input v-model="registerForm.confirmPassword" type="password" placeholder="Confirm Password" class="input" show-password :prefix-icon="Lock" />
+        <el-input v-model="registerForm.username" placeholder="用户名" class="input" :prefix-icon="User" />
+        <el-input v-model="registerForm.password" type="password" placeholder="密码（至少6位）" class="input" show-password :prefix-icon="Lock" />
+        <el-input v-model="registerForm.confirmPassword" type="password" placeholder="确认密码" class="input" show-password :prefix-icon="Lock" />
         <p v-if="registerError" class="error">{{ registerError }}</p>
-        <el-button type="primary" native-type="submit" class="submit-btn" :loading="registerLoading">Register</el-button>
+        <el-button type="primary" native-type="submit" class="submit-btn" :loading="registerLoading">注册</el-button>
       </form>
     </div>
   </div>
@@ -47,8 +47,8 @@ const registerLoading = ref(false)
 
 async function handleLogin() {
   loginError.value = ''
-  if (!loginForm.username.trim()) { loginError.value = 'Username cannot be empty'; return }
-  if (!loginForm.password) { loginError.value = 'Password cannot be empty'; return }
+  if (!loginForm.username.trim()) { loginError.value = '用户名不能为空'; return }
+  if (!loginForm.password) { loginError.value = '密码不能为空'; return }
   loginLoading.value = true
   try {
     const res = await fetch('/api/user/login', {
@@ -60,13 +60,13 @@ async function handleLogin() {
     if (data.success) {
       sessionStorage.setItem('token', data.data.token)
       sessionStorage.setItem('userId', data.data.userId)
-      ElMessage.success('Login successful')
+      ElMessage.success('登录成功')
       router.push('/game')
     } else {
-      loginError.value = data.message || 'Login failed'
+      loginError.value = data.message || '登录失败'
     }
   } catch {
-    loginError.value = 'Network error, please try again'
+    loginError.value = '网络错误，请重试'
   } finally {
     loginLoading.value = false
   }
@@ -74,9 +74,9 @@ async function handleLogin() {
 
 async function handleRegister() {
   registerError.value = ''
-  if (!registerForm.username.trim()) { registerError.value = 'Username cannot be empty'; return }
-  if (registerForm.password.length < 6) { registerError.value = 'Password must be at least 6 characters'; return }
-  if (registerForm.password !== registerForm.confirmPassword) { registerError.value = 'Passwords do not match'; return }
+  if (!registerForm.username.trim()) { registerError.value = '用户名不能为空'; return }
+  if (registerForm.password.length < 6) { registerError.value = '密码至少需要6位'; return }
+  if (registerForm.password !== registerForm.confirmPassword) { registerError.value = '两次密码不一致'; return }
   registerLoading.value = true
   try {
     const res = await fetch('/api/user/register', {
@@ -86,14 +86,14 @@ async function handleRegister() {
     })
     const data = await res.json()
     if (data.success) {
-      ElMessage.success('Registration successful, please login')
+      ElMessage.success('注册成功，请登录')
       loginForm.username = registerForm.username
       activeTab.value = 'login'
     } else {
-      registerError.value = data.message || 'Registration failed'
+      registerError.value = data.message || '注册失败'
     }
   } catch {
-    registerError.value = 'Network error, please try again'
+    registerError.value = '网络错误，请重试'
   } finally {
     registerLoading.value = false
   }

@@ -20,11 +20,11 @@ public class SaveCommand extends Command {
     @Override
     public boolean execute(Game game, Player player) {
         if (storeManager == null) {
-            game.getMessageBridge().send(new SinglePlayerMessage("Save system unavailable."), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("存档系统不可用。"), player);
             return false;
         }
         storeManager.saveGame(game, "save1");
-        game.getMessageBridge().send(new SinglePlayerMessage("Game saved."), player);
+        game.getMessageBridge().send(new SinglePlayerMessage("游戏已保存。"), player);
         return false;
     }
 }

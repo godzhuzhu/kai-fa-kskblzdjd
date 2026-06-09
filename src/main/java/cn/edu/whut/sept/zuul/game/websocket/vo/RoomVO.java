@@ -16,7 +16,7 @@ public class RoomVO {
 
     public static RoomVO from(Room r, List<RoomPlayerVO> players) {
         RoomVO vo = new RoomVO();
-        vo.roomName = r.getName();
+        vo.roomName = r.getShortDescription();
         vo.description = r.getShortDescription();
         vo.portal = r.isPortal();
         vo.items = new ArrayList<>();

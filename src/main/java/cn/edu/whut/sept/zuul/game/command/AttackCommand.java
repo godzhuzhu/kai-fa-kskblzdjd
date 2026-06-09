@@ -22,7 +22,7 @@ public class AttackCommand extends Command {
     @Override
     public boolean execute(Game game, Player player) {
         if (!hasSecondWord()) {
-            game.getMessageBridge().send(new SinglePlayerMessage("Attack whom?"), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("要攻击谁？"), player);
             return false;
         }
 
@@ -32,7 +32,7 @@ public class AttackCommand extends Command {
         }
 
         if (webSocketHandler == null) {
-            game.getMessageBridge().send(new SinglePlayerMessage("No player named " + targetName + " is online."), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("没有名为 " + targetName + " 的在线玩家。"), player);
             return false;
         }
 
@@ -45,23 +45,23 @@ public class AttackCommand extends Command {
         }
 
         if (target == null) {
-            game.getMessageBridge().send(new SinglePlayerMessage("No player named " + targetName + " is online."), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("没有名为 " + targetName + " 的在线玩家。"), player);
             return false;
         }
 
         if (target == player) {
-            game.getMessageBridge().send(new SinglePlayerMessage("You cannot attack yourself!"), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("你不能攻击自己！"), player);
             return false;
         }
 
         if (player.getCurrentRoom() != target.getCurrentRoom()) {
-            game.getMessageBridge().send(new SinglePlayerMessage("That player is not here!"), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("那个玩家不在这里！"), player);
             return false;
         }
 
         long now = System.currentTimeMillis();
         if (now - player.getLastAttackTime() < COOLDOWN_MS) {
-            game.getMessageBridge().send(new SinglePlayerMessage("You cannot attack yet!"), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("攻击冷却中，请稍候！"), player);
             return false;
         }
         player.setLastAttackTime(now);
@@ -116,9 +116,9 @@ public class AttackCommand extends Command {
         killer.notifyFightWin(winEvent);
 
         game.getMessageBridge().send(
-                new SinglePlayerMessage("You defeated " + victim.getPlayerName() + "!"), killer);
+                new SinglePlayerMessage("你击败了 " + victim.getPlayerName() + "！"), killer);
         game.getMessageBridge().send(
-                new SinglePlayerMessage("You were defeated by " + killer.getPlayerName() + "!"), victim);
+                new SinglePlayerMessage("你被 " + killer.getPlayerName() + " 击败了！"), victim);
     }
 
     public void setWebSocketHandler(GameWebSocketHandler handler) {

@@ -1,33 +1,42 @@
 <template>
   <div class="game-container">
+    <!-- Settings Bar -->
+    <div class="settings-bar">
+      <span class="settings-welcome">
+        {{ player.playerName || 'Player' }}
+      </span>
+      <el-button class="settings-btn" @click="settingsVisible = true">
+        <el-icon><Setting /></el-icon> 设置
+      </el-button>
+    </div>
     <div v-if="disconnected" class="reconnect-banner">
-      Connection lost. <a href="#" @click.prevent="reconnect">Click here to reconnect</a>
+      连接断开。<a href="#" @click.prevent="reconnect">点击重新连接</a>
     </div>
 
     <div class="game-layout">
       <!-- Left Column: Player Info -->
       <div class="panel left-panel">
-        <div class="panel-title">Player Info</div>
+        <div class="panel-title">玩家信息</div>
         <div class="player-stats">
-          <div class="stat-row"><span class="stat-label">Name</span><span class="stat-value">{{ player.playerName || '-' }}</span></div>
-          <div class="stat-row"><span class="stat-label">Health</span>
+          <div class="stat-row"><span class="stat-label">名称</span><span class="stat-value">{{ player.playerName || '-' }}</span></div>
+          <div class="stat-row"><span class="stat-label">生命值</span>
             <div class="hp-bar">
               <div class="hp-fill" :style="{ width: hpPercent + '%' }"></div>
               <span class="hp-text">{{ player.currentHealth }}/{{ player.maxHealth }}</span>
             </div>
           </div>
-          <div class="stat-row"><span class="stat-label">Attack</span><span class="stat-value">{{ player.attack }}</span></div>
-          <div class="stat-row"><span class="stat-label">Defense</span><span class="stat-value">{{ player.defense }}</span></div>
+          <div class="stat-row"><span class="stat-label">攻击力</span><span class="stat-value">{{ player.attack }}</span></div>
+          <div class="stat-row"><span class="stat-label">防御力</span><span class="stat-value">{{ player.defense }}</span></div>
         </div>
         <el-divider style="border-color: rgba(255,255,255,0.1); margin: 12px 0" />
-        <div class="panel-title">Inventory</div>
-        <div class="weight-info">Weight: {{ player.currentLoad }}/{{ player.maxCapacity }}</div>
+        <div class="panel-title">背包</div>
+        <div class="weight-info">负重：{{ player.currentLoad }}/{{ player.maxCapacity }}</div>
         <div class="item-list">
           <div v-for="item in player.bag" :key="item.name" class="item-row clickable" @click="handleItemAction(item)">
-            <span>{{ item.name }}</span>
+            <span>{{ tItem(item.name) }}</span>
             <span class="item-weight">{{ item.weight }}kg</span>
           </div>
-          <div v-if="!player.bag || player.bag.length === 0" class="empty-hint">Empty</div>
+          <div v-if="!player.bag || player.bag.length === 0" class="empty-hint">空</div>
         </div>
       </div>
 
@@ -37,42 +46,42 @@
         <div class="room-desc">{{ room.description || '' }}</div>
 
         <el-divider style="border-color: rgba(255,255,255,0.1); margin: 12px 0" />
-        <div class="section-label">Exits</div>
+        <div class="section-label">出口</div>
         <div class="exit-buttons">
           <el-button v-for="exit in room.exits" :key="exit" size="small" class="exit-btn" @click="sendCommand('go ' + exit)">
-            Go {{ exit }}
+            前往 {{ tDirection(exit) }}
           </el-button>
         </div>
 
         <el-divider style="border-color: rgba(255,255,255,0.1); margin: 12px 0" />
-        <div class="section-label">Items in Room</div>
+        <div class="section-label">房间物品</div>
         <div class="item-list">
           <div v-for="item in room.items" :key="item.name" class="item-row clickable" @click="handleItemAction(item, true)">
-            <span>{{ item.name }}</span>
+            <span>{{ tItem(item.name) }}</span>
             <span class="item-weight">{{ item.weight }}kg</span>
           </div>
-          <div v-if="!room.items || room.items.length === 0" class="empty-hint">No items</div>
+          <div v-if="!room.items || room.items.length === 0" class="empty-hint">无物品</div>
         </div>
 
         <el-divider style="border-color: rgba(255,255,255,0.1); margin: 12px 0" />
         <div class="action-buttons">
-          <el-button size="small" class="action-btn" @click="sendCommand('back')">Back</el-button>
-          <el-button size="small" class="action-btn" @click="sendCommand('help')">Help</el-button>
-          <el-button size="small" class="action-btn" @click="sendCommand('look')">Look</el-button>
-          <el-button size="small" class="action-btn" @click="sendCommand('items')">Items</el-button>
+          <el-button size="small" class="action-btn" @click="sendCommand('back')">返回</el-button>
+          <el-button size="small" class="action-btn" @click="sendCommand('help')">帮助</el-button>
+          <el-button size="small" class="action-btn" @click="sendCommand('look')">查看</el-button>
+          <el-button size="small" class="action-btn" @click="sendCommand('items')">物品</el-button>
         </div>
 
         <!-- Command Input -->
         <el-divider style="border-color: rgba(255,255,255,0.1); margin: 12px 0" />
         <div class="command-row">
           <el-input v-model="commandInput" placeholder="Type a command..." class="command-input" @keyup.enter="sendCommand(commandInput)" />
-          <el-button type="primary" size="small" class="send-btn" @click="sendCommand(commandInput)">Send</el-button>
+          <el-button type="primary" size="small" class="send-btn" @click="sendCommand(commandInput)">发送</el-button>
         </div>
       </div>
 
       <!-- Right Column: Players + Messages -->
       <div class="panel right-panel">
-        <div class="panel-title">Players Here</div>
+        <div class="panel-title">当前玩家</div>
         <div class="player-list">
           <div v-for="p in room.players" :key="p.userId" class="room-player-row" :class="{ 'is-self': p.userId === player.userId }">
             <div class="player-info">
@@ -82,13 +91,13 @@
                 <div class="mini-hp-fill" :style="{ width: (p.currentHealth / (p.maxHealth || 100) * 100) + '%' }"></div>
               </div>
             </div>
-            <el-button v-if="p.userId !== player.userId" size="small" class="attack-btn" @click="attackPlayer(p)">Attack</el-button>
+            <el-button v-if="p.userId !== player.userId" size="small" class="attack-btn" @click="attackPlayer(p)">攻击</el-button>
           </div>
-          <div v-if="!room.players || room.players.length === 0" class="empty-hint">No other players</div>
+          <div v-if="!room.players || room.players.length === 0" class="empty-hint">无其他玩家</div>
         </div>
 
         <el-divider style="border-color: rgba(255,255,255,0.1); margin: 12px 0" />
-        <div class="panel-title">Messages</div>
+        <div class="panel-title">消息</div>
         <div class="message-area" ref="messageArea">
           <div v-for="(msg, i) in messages" :key="i" class="message-line">{{ msg }}</div>
         </div>
@@ -96,28 +105,93 @@
     </div>
 
     <!-- Item Action Dialog -->
-    <el-dialog v-model="itemDialogVisible" :title="'Item: ' + (selectedItem ? selectedItem.name : '')" width="300px" top="30vh" class="item-dialog">
+    <el-dialog v-model="itemDialogVisible" :title="'物品：' + (selectedItem ? selectedItem.name : '')" width="300px" top="30vh" class="item-dialog">
       <div class="dialog-actions">
-        <el-button v-if="selectedItemInRoom" type="primary" @click="doItemAction('take')">Take</el-button>
-        <el-button v-if="!selectedItemInRoom" type="primary" @click="doItemAction('drop')">Drop</el-button>
-        <el-button v-if="!selectedItemInRoom" type="success" @click="doItemAction('use')">Use</el-button>
-        <el-button @click="itemDialogVisible = false">Cancel</el-button>
+        <el-button v-if="selectedItemInRoom" type="primary" @click="doItemAction('take')">拾取</el-button>
+        <el-button v-if="!selectedItemInRoom" type="primary" @click="doItemAction('drop')">丢弃</el-button>
+        <el-button v-if="!selectedItemInRoom" type="success" @click="doItemAction('use')">使用</el-button>
+        <el-button @click="itemDialogVisible = false">取消</el-button>
       </div>
     </el-dialog>
 
     <!-- Attack Confirm Dialog -->
-    <el-dialog v-model="attackDialogVisible" title="Confirm Attack" width="300px" top="30vh" class="item-dialog">
-      <p style="color: #ccc; margin-bottom: 20px">Attack {{ attackTargetName }}?</p>
+    <el-dialog v-model="attackDialogVisible" title="确认攻击" width="300px" top="30vh" class="item-dialog">
+      <p style="color: #ccc; margin-bottom: 20px">攻击 {{ attackTargetName }}？</p>
       <div class="dialog-actions">
-        <el-button type="danger" @click="doAttack">Attack!</el-button>
-        <el-button @click="attackDialogVisible = false">Cancel</el-button>
+        <el-button type="danger" @click="doAttack">攻击！</el-button>
+        <el-button @click="attackDialogVisible = false">取消</el-button>
       </div>
     </el-dialog>
   </div>
+
+    <!-- Settings Dialog -->
+    <el-dialog v-model="settingsVisible" title="设置" width="420px" top="15vh" class="settings-dialog">
+      <el-tabs v-model="settingsTab">
+        <el-tab-pane label="修改密码" name="password">
+          <el-form label-position="top" class="settings-form">
+            <el-form-item label="旧密码">
+              <el-input v-model="pwForm.oldPassword" type="password" show-password placeholder="输入旧密码" />
+            </el-form-item>
+            <el-form-item label="新密码">
+              <el-input v-model="pwForm.newPassword" type="password" show-password placeholder="至少6位" />
+            </el-form-item>
+            <p v-if="pwError" class="settings-error">{{ pwError }}</p>
+            <p v-if="pwSuccess" class="settings-success">{{ pwSuccess }}</p>
+            <el-button type="primary" class="settings-submit" @click="doChangePassword" :loading="pwLoading">确认修改</el-button>
+          </el-form>
+        </el-tab-pane>
+        <el-tab-pane label="修改名称" name="name">
+          <el-form label-position="top" class="settings-form">
+            <el-form-item label="玩家名称">
+              <el-input v-model="nameForm.playerName" placeholder="输入新名称" />
+            </el-form-item>
+            <p v-if="nameError" class="settings-error">{{ nameError }}</p>
+            <p v-if="nameSuccess" class="settings-success">{{ nameSuccess }}</p>
+            <el-button type="primary" class="settings-submit" @click="doChangeName" :loading="nameLoading">确认修改</el-button>
+          </el-form>
+        </el-tab-pane>
+        <el-tab-pane label="重置游戏" name="reset">
+          <div class="settings-form">
+            <p style="color: #ccc; margin-bottom: 16px;">重置将清空背包、回到起点、恢复初始属性。此操作不可撤销。</p>
+            <p v-if="resetError" class="settings-error">{{ resetError }}</p>
+            <p v-if="resetSuccess" class="settings-success">{{ resetSuccess }}</p>
+            <el-button type="danger" class="settings-submit" @click="doResetGame" :loading="resetLoading">确认重置</el-button>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
+      <template #footer>
+        <el-button type="danger" plain @click="doLogout" style="float:left">退出登录</el-button>
+        <el-button @click="settingsVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
+
 </template>
 
 <script setup lang="ts">
+
+const directionMap: Record<string, string> = {
+  north: '北', south: '南', east: '东', west: '西',
+  up: '上', down: '下', northeast: '东北', northwest: '西北',
+  southeast: '东南', southwest: '西南'
+}
+
+const itemNameMap: Record<string, string> = {
+  BloodVial: '血瓶', Sword: '剑', MagicCookie: '魔法饼干',
+  StormCleaver: '风暴切割者', DragonscaleBulwark: '龙鳞堡垒',
+  StonehideElixir: '石肤药剂', BerserkerTotem: '狂战士图腾',
+  BloodDagger: '血匕首', ImmortalCore: '不朽核心',
+  ShadowbaneBallista: '暗影弩炮'
+}
+
+function tDirection(dir: string): string {
+  return directionMap[dir] || dir
+}
+
+function tItem(name: string): string {
+  return itemNameMap[name] || name
+}
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { Setting } from '@element-plus/icons-vue'
 const WS_URL = `ws://${window.location.hostname === 'localhost' ? 'localhost:8080' : window.location.host}/game/websocket`
 
 const player = reactive<any>({
@@ -144,6 +218,21 @@ const selectedItemInRoom = ref(false)
 const attackDialogVisible = ref(false)
 const attackTarget = ref<any>(null)
 const attackTargetName = ref('')
+
+// Settings
+const settingsVisible = ref(false)
+const settingsTab = ref('password')
+const pwForm = reactive({ oldPassword: '', newPassword: '' })
+const nameForm = reactive({ playerName: '' })
+const pwError = ref('')
+const pwSuccess = ref('')
+const nameError = ref('')
+const nameSuccess = ref('')
+const resetError = ref('')
+const resetSuccess = ref('')
+const pwLoading = ref(false)
+const nameLoading = ref(false)
+const resetLoading = ref(false)
 
 const hpPercent = computed(() => {
   if (!player.maxHealth) return 100
@@ -257,6 +346,80 @@ function doAttack() {
     sendCommand('attack ' + attackTarget.value.playerName)
   }
   attackDialogVisible.value = false
+}
+
+
+async function doChangePassword() {
+  pwError.value = ''; pwSuccess.value = ''
+  if (!pwForm.oldPassword) { pwError.value = '请输入旧密码'; return }
+  if (pwForm.newPassword.length < 6) { pwError.value = '新密码至少需要6位'; return }
+  pwLoading.value = true
+  try {
+    const token = sessionStorage.getItem('token')
+    const res = await fetch('/api/user/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ oldPassword: pwForm.oldPassword, newPassword: pwForm.newPassword })
+    })
+    const data = await res.json()
+    if (data.success) {
+      pwSuccess.value = '密码修改成功'
+      pwForm.oldPassword = ''; pwForm.newPassword = ''
+    } else {
+      pwError.value = data.message || '修改失败'
+    }
+  } catch { pwError.value = '网络错误' }
+  finally { pwLoading.value = false }
+}
+
+async function doChangeName() {
+  nameError.value = ''; nameSuccess.value = ''
+  if (!nameForm.playerName.trim()) { nameError.value = '名称不能为空'; return }
+  nameLoading.value = true
+  try {
+    const token = sessionStorage.getItem('token')
+    const res = await fetch('/api/user/change-name', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ playerName: nameForm.playerName.trim() })
+    })
+    const data = await res.json()
+    if (data.success) {
+      nameSuccess.value = '名称修改成功'
+      player.playerName = nameForm.playerName.trim()
+      nameForm.playerName = ''
+    } else {
+      nameError.value = data.message || '修改失败'
+    }
+  } catch { nameError.value = '网络错误' }
+  finally { nameLoading.value = false }
+}
+
+async function doResetGame() {
+  resetError.value = ''; resetSuccess.value = ''
+  resetLoading.value = true
+  try {
+    const token = sessionStorage.getItem('token')
+    const res = await fetch('/api/user/reset-game', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
+    })
+    const data = await res.json()
+    if (data.success) {
+      resetSuccess.value = '游戏已重置'
+      messages.value = []
+    } else {
+      resetError.value = data.message || '重置失败'
+    }
+  } catch { resetError.value = '网络错误' }
+  finally { resetLoading.value = false }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('token')
+  sessionStorage.removeItem('userId')
+  if (ws) ws.close()
+  window.location.href = '/'
 }
 
 onMounted(() => {
@@ -535,4 +698,94 @@ onUnmounted(() => {
 .item-dialog :deep(.el-dialog__body) {
   padding: 20px;
 }
-</style>
+
+/* scrollbar - dark fantasy theme */
+.panel::-webkit-scrollbar,
+.message-area::-webkit-scrollbar {
+  width: 5px;
+}
+.panel::-webkit-scrollbar-track,
+.message-area::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 3px;
+}
+.panel::-webkit-scrollbar-thumb,
+.message-area::-webkit-scrollbar-thumb {
+  background: rgba(240, 217, 160, 0.25);
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+.panel::-webkit-scrollbar-thumb:hover,
+.message-area::-webkit-scrollbar-thumb:hover {
+  background: rgba(240, 217, 160, 0.5);
+}
+.panel,
+.message-area {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(240, 217, 160, 0.25) rgba(255, 255, 255, 0.03);
+}
+/* Settings Bar */
+.settings-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 8px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.settings-welcome {
+  color: #f0d9a0;
+  font-size: 14px;
+  margin-right: auto;
+}
+.settings-btn {
+  --el-button-bg-color: rgba(255,255,255,0.05);
+  --el-button-border-color: rgba(255,255,255,0.1);
+  --el-button-text-color: #ccc;
+  --el-button-hover-bg-color: rgba(255,255,255,0.1);
+  --el-button-hover-text-color: #fff;
+}
+
+/* Settings Dialog */
+.settings-dialog :deep(.el-dialog__header) {
+  color: #f0d9a0;
+}
+.settings-dialog :deep(.el-dialog__body) {
+  padding: 20px;
+}
+.settings-dialog :deep(.el-tabs__item) {
+  color: #888;
+}
+.settings-dialog :deep(.el-tabs__item.is-active) {
+  color: #f0d9a0;
+}
+.settings-dialog :deep(.el-tabs__active-bar) {
+  background-color: #f0d9a0;
+}
+.settings-form {
+  padding: 8px 0;
+}
+.settings-form :deep(.el-form-item__label) {
+  color: #aaa;
+}
+.settings-form :deep(.el-input__wrapper) {
+  background: rgba(255,255,255,0.05);
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.1) inset;
+}
+.settings-form :deep(.el-input__inner) {
+  color: #fff;
+}
+.settings-error {
+  color: #f56c6c;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.settings-success {
+  color: #67c23a;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.settings-submit {
+  width: 100%;
+  margin-top: 8px;
+}</style>

@@ -23,7 +23,7 @@ public class BackCommand extends Command {
 
         if (previousRoom == null) {
             game.getMessageBridge().send(
-                new SinglePlayerMessage("You are at the starting point!"), player);
+                new SinglePlayerMessage("你已经在起点了！"), player);
             return false;
         }
 

@@ -7,20 +7,12 @@ import cn.edu.whut.sept.zuul.game.item.AbstractItem;
 import cn.edu.whut.sept.zuul.game.message.SinglePlayerMessage;
 import java.util.List;
 
-/**
- * UseCommand — 使用物品命令。
- *
- * <p>使用背包中的道具类物品，装备不可使用。</p>
- *
- * @author gmy
- * @since 1.0
- */
 public class UseCommand extends Command {
 
     @Override
     public boolean execute(Game game, Player player) {
         if (!hasSecondWord()) {
-            game.getMessageBridge().send(new SinglePlayerMessage("Use what?"), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("要使用什么？"), player);
             return false;
         }
 
@@ -36,19 +28,26 @@ public class UseCommand extends Command {
         }
 
         if (target == null) {
-            game.getMessageBridge().send(new SinglePlayerMessage("You don't have this item."), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("你没有这个物品。"), player);
             return false;
         }
 
         if (target.getClass().getSimpleName().equals("Sword")
                 || target.getClass().getSimpleName().equals("DragonscaleBulwark")
                 || target.getClass().getSimpleName().equals("StormCleaver")) {
-            game.getMessageBridge().send(new SinglePlayerMessage("Cannot use equipment."), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("装备类物品无法使用。"), player);
+            return false;
+        }
+
+        if (target.getClass().getSimpleName().equals("BloodVial")
+                && player.getCurrentHealth() >= player.getMaxHealth()) {
+            game.getMessageBridge().send(new SinglePlayerMessage(
+                    "生命值已满，无法使用 " + target.getName() + "."), player);
             return false;
         }
 
         player.useItem(target);
-        game.getMessageBridge().send(new SinglePlayerMessage("You used the " + target.getName() + "."), player);
+        game.getMessageBridge().send(new SinglePlayerMessage("你使用了 " + target.getName() + "."), player);
         return false;
     }
 }

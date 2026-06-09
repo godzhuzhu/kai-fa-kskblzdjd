@@ -20,7 +20,7 @@ import java.util.Stack;
 public class Player {
 
     private final int userId;
-    private final String playerName;
+    private String playerName;
     private Room currentRoom;
 
     // 背包
@@ -68,6 +68,8 @@ public class Player {
     public String getPlayerName() {
         return playerName;
     }
+
+    public void setPlayerName(String playerName) { this.playerName = playerName; }
 
     public Room getCurrentRoom() {
         return currentRoom;

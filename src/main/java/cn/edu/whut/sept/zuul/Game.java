@@ -46,11 +46,11 @@ public class Game {
     private void createRooms() {
         allRooms = new ArrayList<>();
 
-        Room outside = new Room("outside", "outside the main entrance of the university");
-        Room theater = new Room("theater", "in a lecture theater");
-        Room pub = new Room("pub", "in the campus pub");
-        Room lab = new Room("lab", "in a computing lab");
-        Room office = new Room("office", "in the computing admin office");
+        Room outside = new Room("outside", "大学主入口外");
+        Room theater = new Room("theater", "报告厅内");
+        Room pub = new Room("pub", "校园酒吧内");
+        Room lab = new Room("lab", "计算机实验室内");
+        Room office = new Room("office", "计算机管理办公室内");
 
         outside.setExit("east", theater);
         outside.setExit("south", lab);
@@ -87,7 +87,7 @@ public class Game {
     public String processCommand(Player p, String cmd) {
         Command command = parser.parseCommand(cmd);
         if (command == null) {
-            String msg = "I don't understand...";
+            String msg = "抱歉，我不理解这个命令...";
             messageBridge.send(new SinglePlayerMessage(msg), p);
             return msg;
         }
@@ -105,20 +105,20 @@ public class Game {
         while (!finished) {
             Command command = parser.getCommand();
             if (command == null) {
-                messageBridge.send(new SinglePlayerMessage("I don't understand..."), player);
+                messageBridge.send(new SinglePlayerMessage("抱歉，我不理解这个命令..."), player);
             } else {
                 finished = command.execute(this, player);
             }
         }
 
-        messageBridge.send(new GlobalMessage("Thank you for playing.  Good bye."));
+        messageBridge.send(new GlobalMessage("感谢游玩，再见！"));
     }
 
     private void printWelcome() {
         messageBridge.send(new GlobalMessage(""));
-        messageBridge.send(new GlobalMessage("Welcome to the World of Zuul!"));
-        messageBridge.send(new GlobalMessage("World of Zuul is a new, incredibly boring adventure game."));
-        messageBridge.send(new GlobalMessage("Type 'help' if you need help."));
+        messageBridge.send(new GlobalMessage("欢迎来到 Zuul 的世界！"));
+        messageBridge.send(new GlobalMessage("Zuul 世界是一个全新的奇妙冒险游戏。"));
+        messageBridge.send(new GlobalMessage("输入 'help' 获取帮助。"));
         messageBridge.send(new GlobalMessage(""));
         messageBridge.send(new SinglePlayerMessage(player.getCurrentRoom().getLongDescription()), player);
     }

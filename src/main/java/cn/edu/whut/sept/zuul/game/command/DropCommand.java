@@ -20,7 +20,7 @@ public class DropCommand extends Command {
     @Override
     public boolean execute(Game game, Player player) {
         if (!hasSecondWord()) {
-            game.getMessageBridge().send(new SinglePlayerMessage("Drop what?"), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("要丢弃什么？"), player);
             return false;
         }
 
@@ -42,7 +42,7 @@ public class DropCommand extends Command {
 
         player.dropItem(target);
         player.getCurrentRoom().addItem(target);
-        game.getMessageBridge().send(new SinglePlayerMessage("You dropped the " + target.getName() + "."), player);
+        game.getMessageBridge().send(new SinglePlayerMessage("你丢弃了 " + target.getName() + "."), player);
         return false;
     }
 }

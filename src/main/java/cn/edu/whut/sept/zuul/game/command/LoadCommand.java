@@ -20,11 +20,11 @@ public class LoadCommand extends Command {
     @Override
     public boolean execute(Game game, Player player) {
         if (storeManager == null) {
-            game.getMessageBridge().send(new SinglePlayerMessage("Load system unavailable."), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("读档系统不可用。"), player);
             return false;
         }
         storeManager.loadGame(game, "save1");
-        game.getMessageBridge().send(new SinglePlayerMessage("Game loaded."), player);
+        game.getMessageBridge().send(new SinglePlayerMessage("游戏已读取。"), player);
         return false;
     }
 }

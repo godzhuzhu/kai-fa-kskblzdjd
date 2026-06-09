@@ -39,11 +39,7 @@ public class Parser
             }
         }
 
-        Command command = commands.get(word1);
-        if(command != null) {
-            command.setSecondWord(word2);
-        }
-        return command;
+        return wrapCommand(commands.get(word1), word2);
     }
 
     public Command parseCommand(String inputLine) {
@@ -58,11 +54,23 @@ public class Parser
             }
         }
 
-        Command command = commands.get(word1);
-        if(command != null) {
-            command.setSecondWord(word2);
-        }
-        return command;
+        return wrapCommand(commands.get(word1), word2);
+    }
+
+    private static Command wrapCommand(Command base, String secondWord) {
+        if (base == null) return null;
+        return new Command() {
+            @Override
+            public boolean execute(Game game, cn.edu.whut.sept.zuul.game.Player player) {
+                base.setSecondWord(secondWord);
+                return base.execute(game, player);
+            }
+
+            @Override
+            public String getSecondWord() { return secondWord; }
+            @Override
+            public boolean hasSecondWord() { return secondWord != null; }
+        };
     }
 
     public void showCommands()

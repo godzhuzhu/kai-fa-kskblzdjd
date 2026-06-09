@@ -21,12 +21,7 @@ public class StoreManager {
 
     public void saveGame(Game game, String saveName) {
         List<Room> allRooms = game.getAllRooms();
-        List<Player> allPlayers = new ArrayList<>();
-        for (Player p : game.getAllPlayers().values()) {
-            if (p.isOnline()) {
-                allPlayers.add(p);
-            }
-        }
+        List<Player> allPlayers = new ArrayList<>(game.getAllPlayers().values());
         Store store = Store.fromGame(allRooms, allPlayers);
         String json = StoreUtil.toJson(store);
         storeService.save(saveName, json);
@@ -66,16 +61,39 @@ public class StoreManager {
                         && ps.getCurrentRoomIndex() < allRooms.size()) {
                     player.moveTo(allRooms.get(ps.getCurrentRoomIndex()));
                 }
+                player.setMaxCapacity(ps.getMaxCapacity());
                 for (String itemName : ps.getBagItemNames()) {
                     AbstractItem item = Items.createItem(itemName);
                     if (item != null) {
                         player.takeItem(item);
                     }
                 }
-                player.setMaxCapacity(ps.getMaxCapacity());
+                if (ps.getEquippedWeaponName() != null) {
+                    for (AbstractItem item : player.getBag()) {
+                        if (item.getName().equals(ps.getEquippedWeaponName())) {
+                            player.equipWeapon(item);
+                            break;
+                        }
+                    }
+                }
+                if (ps.getEquippedArmorName() != null) {
+                    for (AbstractItem item : player.getBag()) {
+                        if (item.getName().equals(ps.getEquippedArmorName())) {
+                            player.equipArmor(item);
+                            break;
+                        }
+                    }
+                }
                 player.setAttack(ps.getAttack());
                 player.setDefense(ps.getDefense());
                 player.setCurrentHealth(ps.getCurrentHealth());
+                player.setMaxHealth(ps.getMaxHealth() > 0 ? ps.getMaxHealth() : 100);
+                int[] sp = player.getCurrentRoom().getSpawnPoint();
+                player.setPosX(sp[0]);
+                player.setPosY(sp[1]);
+                if (ps.getPreviousRoomIndexes() != null) {
+                    player.getPreviousRooms().clear();
+                }
             }
         }
     }

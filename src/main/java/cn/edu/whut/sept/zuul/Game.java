@@ -7,6 +7,8 @@ import cn.edu.whut.sept.zuul.game.message.ConsoleMessageBridge;
 import cn.edu.whut.sept.zuul.game.message.GlobalMessage;
 import cn.edu.whut.sept.zuul.game.message.SinglePlayerMessage;
 import cn.edu.whut.sept.zuul.game.store.StoreManager;
+import cn.edu.whut.sept.zuul.game.websocket.GameWebSocketHandler;
+import cn.edu.whut.sept.zuul.game.item.Items;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -26,6 +28,7 @@ public class Game {
     private AbsMessageBridge messageBridge;
     private Map<Integer, Player> playerMap;
     private Room startingRoom;
+    private GameWebSocketHandler webSocketHandler;
 
     @Autowired
     private StoreManager storeManager;
@@ -46,11 +49,11 @@ public class Game {
     private void createRooms() {
         allRooms = new ArrayList<>();
 
-        Room outside = new Room("outside", "outside the main entrance of the university");
-        Room theater = new Room("theater", "in a lecture theater");
-        Room pub = new Room("pub", "in the campus pub");
-        Room lab = new Room("lab", "in a computing lab");
-        Room office = new Room("office", "in the computing admin office");
+        Room outside = new Room("outside", "大学正门外");
+        Room theater = new Room("theater", "演讲厅内");
+        Room pub = new Room("pub", "校园酒吧");
+        Room lab = new Room("lab", "计算机实验室");
+        Room office = new Room("office", "行政办公室");
 
         outside.setExit("east", theater);
         outside.setExit("south", lab);
@@ -180,20 +183,20 @@ public class Game {
         while (!finished) {
             Command command = parser.getCommand();
             if (command == null) {
-                messageBridge.send(new SinglePlayerMessage("I don't understand..."), player);
+                messageBridge.send(new SinglePlayerMessage("无法理解..."), player);
             } else {
                 finished = command.execute(this, player);
             }
         }
 
-        messageBridge.send(new GlobalMessage("Thank you for playing.  Good bye."));
+        messageBridge.send(new GlobalMessage("感谢游玩，再见！"));
     }
 
     private void printWelcome() {
         messageBridge.send(new GlobalMessage(""));
-        messageBridge.send(new GlobalMessage("Welcome to the World of Zuul!"));
-        messageBridge.send(new GlobalMessage("World of Zuul is a new, incredibly boring adventure game."));
-        messageBridge.send(new GlobalMessage("Type 'help' if you need help."));
+        messageBridge.send(new GlobalMessage("欢迎来到 World of Zuul！"));
+        messageBridge.send(new GlobalMessage("一个全新的多人冒险游戏。"));
+        messageBridge.send(new GlobalMessage("输入 'help' 查看帮助。"));
         messageBridge.send(new GlobalMessage(""));
         messageBridge.send(new SinglePlayerMessage(player.getCurrentRoom().getLongDescription()), player);
     }
@@ -229,8 +232,31 @@ public class Game {
         return startingRoom;
     }
 
+    public void respawnItems() {
+        boolean added = false;
+        for (Room room : allRooms) {
+            if (room.getItems().size() < 2) {
+                room.addItem(Items.generateRandomItem());
+                added = true;
+            }
+        }
+        if (added && webSocketHandler != null) {
+            for (Room room : allRooms) {
+                webSocketHandler.roomPush(room);
+            }
+        }
+    }
+
     public Map<Integer, Player> getAllPlayers() {
         return playerMap;
+    }
+
+    public GameWebSocketHandler getWebSocketHandler() {
+        return webSocketHandler;
+    }
+
+    public void setWebSocketHandler(GameWebSocketHandler handler) {
+        this.webSocketHandler = handler;
     }
 
     public Room getRandomRoom() {

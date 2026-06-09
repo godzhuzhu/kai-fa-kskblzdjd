@@ -35,7 +35,7 @@ spring:
     activate:
       on-profile: prod
   datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/zuul?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/zuul?useSSL=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${MYSQL_USER:zuul}
     password: ${MYSQL_PASSWORD:zuul123}
@@ -45,9 +45,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    database-platform: org.hibernate.dialect.MySQLDialect
   data:
     redis:
       host: ${REDIS_HOST:localhost}
-      port: 6379
+      port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}

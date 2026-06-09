@@ -6,12 +6,12 @@ import cn.edu.whut.sept.zuul.game.combat.event.DeathEvent;
 import cn.edu.whut.sept.zuul.game.combat.event.FightWinEvent;
 import cn.edu.whut.sept.zuul.game.combat.event.IPlayerListener;
 
-public class ImmortalCore extends AbstractItem implements IPlayerListener {
+public class PhoenixFeather extends AbstractItem implements IPlayerListener {
 
     private boolean used = false;
 
-    public ImmortalCore() {
-        super("ImmortalCore", "不朽核心", "神秘的能量核心 (免疫一次死亡，保留1HP)", 2);
+    public PhoenixFeather() {
+        super("PhoenixFeather", "凤凰羽毛", "燃烧的羽毛 (死亡时复活，恢复50%生命)", 2);
     }
 
     @Override
@@ -36,7 +36,7 @@ public class ImmortalCore extends AbstractItem implements IPlayerListener {
     public void onDeath(Player player, DeathEvent event) {
         if (!used) {
             used = true;
-            player.setCurrentHealth(1);
+            player.setCurrentHealth(player.getMaxHealth() / 2);
             player.removeListener(this);
             player.removeFromBag(this);
         }

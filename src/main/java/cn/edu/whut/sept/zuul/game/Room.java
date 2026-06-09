@@ -3,9 +3,12 @@ package cn.edu.whut.sept.zuul.game;
 import cn.edu.whut.sept.zuul.game.item.AbstractItem;
 import cn.edu.whut.sept.zuul.game.item.Items;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 房间类 — 表示游戏地图中的一个房间，支持物品存放、传送和多人游戏。
@@ -27,7 +30,7 @@ public class Room {
     private int width;
     private int height;
     private int[][] tiles;
-    private final HashMap<String, int[]> itemSpawns;
+    private final Map<AbstractItem, int[]> itemSpawns;
     private int[] spawnPoint;
 
     public Room(String name, String description) {
@@ -35,8 +38,8 @@ public class Room {
         this.description = description;
         this.portal = false;
         this.exits = new HashMap<>();
-        this.items = new ArrayList<>();
-        this.itemSpawns = new HashMap<>();
+        this.items = Collections.synchronizedList(new ArrayList<>());
+        this.itemSpawns = new ConcurrentHashMap<>();
         this.width = 15;
         this.height = 10;
         this.spawnPoint = new int[]{1, 1};
@@ -58,8 +61,8 @@ public class Room {
      * 获取房间完整描述，拼接名称、描述、物品列表和出口。
      *
      * <pre>
-     * 物品列表格式：Items: Sword(8kg), BloodVial(2kg)
-     * 出口格式：  Exits: east, west
+     * 物品列表格式：物品: Sword(8kg), BloodVial(2kg)
+     * 出口格式：  出口: east, west
      * </pre>
      *
      * @return 完整描述字符串
@@ -69,7 +72,7 @@ public class Room {
         sb.append(name).append("\n").append(description);
 
         if (!items.isEmpty()) {
-            sb.append("\nItems: ");
+            sb.append("\n物品: ");
             List<String> itemDescs = new ArrayList<>();
             for (AbstractItem item : items) {
                 itemDescs.add(item.getName() + "(" + item.getWeight() + "kg)");
@@ -79,7 +82,7 @@ public class Room {
 
         Set<String> exitSet = exits.keySet();
         if (!exitSet.isEmpty()) {
-            sb.append("\nExits: ").append(String.join(", ", exitSet));
+            sb.append("\n出口: ").append(String.join(", ", exitSet));
         }
 
         return sb.toString();
@@ -154,11 +157,16 @@ public class Room {
      * @return 移除的物品，未找到返回 null
      */
     public AbstractItem removeItem(String name) {
-        AbstractItem item = getItem(name);
-        if (item != null) {
-            items.remove(item);
+        synchronized (items) {
+            for (AbstractItem item : items) {
+                if (item.getName().equals(name)) {
+                    items.remove(item);
+                    itemSpawns.remove(item);
+                    return item;
+                }
+            }
         }
-        return item;
+        return null;
     }
 
     /**
@@ -230,30 +238,36 @@ public class Room {
     public void setSpawnPoint(int x, int y) { this.spawnPoint = new int[]{x, y}; }
 
     public boolean isWalkable(int x, int y) {
+        if (tiles == null) return false;
         if (x < 0 || x >= width || y < 0 || y >= height) return false;
         return tiles[y][x] != TileType.WALL;
     }
 
     public Direction getDoorDirection(int x, int y) {
+        if (tiles == null) return null;
         if (x < 0 || x >= width || y < 0 || y >= height) return null;
         return TileType.toDirection(tiles[y][x]);
     }
 
     public boolean hasItemAt(int x, int y) {
-        for (AbstractItem item : items) {
-            int[] pos = itemSpawns.get(item.getName());
-            if (pos != null && pos[0] == x && pos[1] == y) return true;
+        synchronized (items) {
+            for (int[] pos : itemSpawns.values()) {
+                if (pos[0] == x && pos[1] == y) return true;
+            }
         }
         return false;
     }
 
     public AbstractItem takeItemAt(int x, int y) {
-        for (AbstractItem item : new ArrayList<>(items)) {
-            int[] pos = itemSpawns.get(item.getName());
-            if (pos != null && pos[0] == x && pos[1] == y) {
-                items.remove(item);
-                itemSpawns.remove(item.getName());
-                return item;
+        synchronized (items) {
+            for (Map.Entry<AbstractItem, int[]> entry : itemSpawns.entrySet()) {
+                int[] pos = entry.getValue();
+                if (pos[0] == x && pos[1] == y) {
+                    AbstractItem item = entry.getKey();
+                    itemSpawns.remove(item);
+                    items.remove(item);
+                    return item;
+                }
             }
         }
         return null;
@@ -261,13 +275,15 @@ public class Room {
 
     public void placeItem(AbstractItem item, int x, int y) {
         items.add(item);
-        itemSpawns.put(item.getName(), new int[]{x, y});
+        itemSpawns.put(item, new int[]{x, y});
     }
 
     public int[] getItemPosition(String itemName) {
-        for (AbstractItem item : items) {
-            if (item.getName().equals(itemName)) {
-                return itemSpawns.get(itemName);
+        synchronized (items) {
+            for (Map.Entry<AbstractItem, int[]> entry : itemSpawns.entrySet()) {
+                if (entry.getKey().getName().equals(itemName)) {
+                    return entry.getValue();
+                }
             }
         }
         return null;
@@ -275,12 +291,22 @@ public class Room {
 
     public void addItem(AbstractItem item) {
         items.add(item);
-        int x = 1 + (int) (Math.random() * (width - 2));
-        int y = 1 + (int) (Math.random() * (height - 2));
-        while (!isWalkable(x, y)) {
+        int maxAttempts = 100;
+        int x = 1, y = 1;
+        boolean found = false;
+        for (int attempt = 0; attempt < maxAttempts; attempt++) {
             x = 1 + (int) (Math.random() * (width - 2));
             y = 1 + (int) (Math.random() * (height - 2));
+            if (tiles == null || isWalkable(x, y)) {
+                found = true;
+                break;
+            }
         }
-        itemSpawns.put(item.getName(), new int[]{x, y});
+        if (!found && tiles != null) {
+            for (int ty = 1; ty < height - 1 && !found; ty++)
+                for (int tx = 1; tx < width - 1 && !found; tx++)
+                    if (isWalkable(tx, ty)) { x = tx; y = ty; found = true; }
+        }
+        itemSpawns.put(item, new int[]{x, y});
     }
 }

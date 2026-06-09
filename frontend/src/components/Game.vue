@@ -1,94 +1,94 @@
 <template>
   <div class="game-container">
     <div v-if="disconnected" class="reconnect-banner">
-      Connection lost. <a href="#" @click.prevent="reconnect">Click here to reconnect</a>
+      Connection lost. <a href="#" @click.prevent="reconnect">点此重连</a>
     </div>
 
     <div class="game-layout">
       <!-- Left Column: Player Info -->
       <div class="panel left-panel">
-        <div class="panel-title">Player Info</div>
+        <div class="panel-title">玩家信息</div>
         <div class="player-stats">
-          <div class="stat-row"><span class="stat-label">Name</span><span class="stat-value">{{ player.playerName || '-' }}</span></div>
-          <div class="stat-row"><span class="stat-label">Health</span>
+          <div class="stat-row"><span class="stat-label">名字</span><span class="stat-value">{{ player.playerName || '-' }}</span></div>
+          <div class="stat-row"><span class="stat-label">生命</span>
             <div class="hp-bar">
               <div class="hp-fill" :style="{ width: hpPercent + '%' }"></div>
               <span class="hp-text">{{ player.currentHealth }}/{{ player.maxHealth }}</span>
             </div>
           </div>
-          <div class="stat-row"><span class="stat-label">Attack</span><span class="stat-value">{{ player.attack }}</span></div>
-          <div class="stat-row"><span class="stat-label">Defense</span><span class="stat-value">{{ player.defense }}</span></div>
+          <div class="stat-row"><span class="stat-label">攻击</span><span class="stat-value">{{ player.attack }}</span></div>
+          <div class="stat-row"><span class="stat-label">防御</span><span class="stat-value">{{ player.defense }}</span></div>
         </div>
         <el-divider style="border-color: rgba(255,255,255,0.1); margin: 12px 0" />
-        <div class="panel-title">Inventory</div>
-        <div class="weight-info">Weight: {{ player.currentLoad }}/{{ player.maxCapacity }}</div>
+        <div class="panel-title">背包</div>
+        <div class="weight-info">负重: {{ player.currentLoad }}/{{ player.maxCapacity }}</div>
         <div class="item-list">
           <div v-for="item in player.bag" :key="item.name" class="item-row clickable" @click="handleItemAction(item)">
             <span>{{ item.name }}</span>
             <span class="item-weight">{{ item.weight }}kg</span>
           </div>
-          <div v-if="!player.bag || player.bag.length === 0" class="empty-hint">Empty</div>
+          <div v-if="!player.bag || player.bag.length === 0" class="empty-hint">空</div>
         </div>
       </div>
 
       <!-- Center Column: Room Info -->
       <div class="panel center-panel">
-        <div class="panel-title">{{ room.roomName || 'Unknown Room' }}</div>
+        <div class="panel-title">{{ room.roomName || '未知' }}</div>
         <div class="room-desc">{{ room.description || '' }}</div>
 
         <el-divider style="border-color: rgba(255,255,255,0.1); margin: 12px 0" />
-        <div class="section-label">Exits</div>
+        <div class="section-label">出口</div>
         <div class="exit-buttons">
           <el-button v-for="exit in room.exits" :key="exit" size="small" class="exit-btn" @click="sendCommand('go ' + exit)">
-            Go {{ exit }}
+            前往 {{ exit }}
           </el-button>
         </div>
 
         <el-divider style="border-color: rgba(255,255,255,0.1); margin: 12px 0" />
-        <div class="section-label">Items in Room</div>
+        <div class="section-label">房间物品</div>
         <div class="item-list">
           <div v-for="item in room.items" :key="item.name" class="item-row clickable" @click="handleItemAction(item, true)">
             <span>{{ item.name }}</span>
             <span class="item-weight">{{ item.weight }}kg</span>
           </div>
-          <div v-if="!room.items || room.items.length === 0" class="empty-hint">No items</div>
+          <div v-if="!room.items || room.items.length === 0" class="empty-hint">无物品</div>
         </div>
 
         <el-divider style="border-color: rgba(255,255,255,0.1); margin: 12px 0" />
         <div class="action-buttons">
-          <el-button size="small" class="action-btn" @click="sendCommand('back')">Back</el-button>
-          <el-button size="small" class="action-btn" @click="sendCommand('help')">Help</el-button>
-          <el-button size="small" class="action-btn" @click="sendCommand('look')">Look</el-button>
-          <el-button size="small" class="action-btn" @click="sendCommand('items')">Items</el-button>
+          <el-button size="small" class="action-btn" @click="sendCommand('back')">返回</el-button>
+          <el-button size="small" class="action-btn" @click="sendCommand('help')">帮助</el-button>
+          <el-button size="small" class="action-btn" @click="sendCommand('look')">查看</el-button>
+          <el-button size="small" class="action-btn" @click="sendCommand('items')">背包</el-button>
         </div>
 
         <!-- Command Input -->
         <el-divider style="border-color: rgba(255,255,255,0.1); margin: 12px 0" />
         <div class="command-row">
-          <el-input v-model="commandInput" placeholder="Type a command..." class="command-input" @keyup.enter="sendCommand(commandInput)" />
-          <el-button type="primary" size="small" class="send-btn" @click="sendCommand(commandInput)">Send</el-button>
+          <el-input v-model="commandInput" placeholder="输入命令..." class="command-input" @keyup.enter="sendCommand(commandInput)" />
+          <el-button type="primary" size="small" class="send-btn" @click="sendCommand(commandInput)">发送</el-button>
         </div>
       </div>
 
       <!-- Right Column: Players + Messages -->
       <div class="panel right-panel">
-        <div class="panel-title">Players Here</div>
+        <div class="panel-title">在线玩家</div>
         <div class="player-list">
           <div v-for="p in room.players" :key="p.userId" class="room-player-row" :class="{ 'is-self': p.userId === player.userId }">
             <div class="player-info">
               <span class="player-name">{{ p.playerName }}</span>
-              <span v-if="p.userId === player.userId" class="self-tag">(you)</span>
+              <span v-if="p.userId === player.userId" class="self-tag">(你)</span>
               <div class="mini-hp">
                 <div class="mini-hp-fill" :style="{ width: (p.currentHealth / (p.maxHealth || 100) * 100) + '%' }"></div>
               </div>
             </div>
-            <el-button v-if="p.userId !== player.userId" size="small" class="attack-btn" @click="attackPlayer(p)">Attack</el-button>
+              <el-button v-if="p.userId !== player.userId" size="small" class="attack-btn" @click="attackPlayer(p)">攻击</el-button>
           </div>
-          <div v-if="!room.players || room.players.length === 0" class="empty-hint">No other players</div>
+          <div v-if="!room.players || room.players.length === 0" class="empty-hint">无其他玩家</div>
         </div>
 
         <el-divider style="border-color: rgba(255,255,255,0.1); margin: 12px 0" />
-        <div class="panel-title">Messages</div>
+        <div class="panel-title">消息</div>
         <div class="message-area" ref="messageArea">
           <div v-for="(msg, i) in messages" :key="i" class="message-line">{{ msg }}</div>
         </div>
@@ -96,21 +96,21 @@
     </div>
 
     <!-- Item Action Dialog -->
-    <el-dialog v-model="itemDialogVisible" :title="'Item: ' + (selectedItem ? selectedItem.name : '')" width="300px" top="30vh" class="item-dialog">
+    <el-dialog v-model="itemDialogVisible" :title="'物品: ' + (selectedItem ? selectedItem.name : '')" width="300px" top="30vh" class="item-dialog">
       <div class="dialog-actions">
-        <el-button v-if="selectedItemInRoom" type="primary" @click="doItemAction('take')">Take</el-button>
-        <el-button v-if="!selectedItemInRoom" type="primary" @click="doItemAction('drop')">Drop</el-button>
-        <el-button v-if="!selectedItemInRoom" type="success" @click="doItemAction('use')">Use</el-button>
-        <el-button @click="itemDialogVisible = false">Cancel</el-button>
+        <el-button v-if="selectedItemInRoom" type="primary" @click="doItemAction('take')">拾取</el-button>
+        <el-button v-if="!selectedItemInRoom" type="primary" @click="doItemAction('drop')">丢弃</el-button>
+        <el-button v-if="!selectedItemInRoom" type="success" @click="doItemAction('use')">使用</el-button>
+        <el-button @click="itemDialogVisible = false">取消</el-button>
       </div>
     </el-dialog>
 
     <!-- Attack Confirm Dialog -->
-    <el-dialog v-model="attackDialogVisible" title="Confirm Attack" width="300px" top="30vh" class="item-dialog">
-      <p style="color: #ccc; margin-bottom: 20px">Attack {{ attackTargetName }}?</p>
+    <el-dialog v-model="attackDialogVisible" title="确认攻击" width="300px" top="30vh" class="item-dialog">
+      <p style="color: #ccc; margin-bottom: 20px">攻击 {{ attackTargetName }} ？</p>
       <div class="dialog-actions">
-        <el-button type="danger" @click="doAttack">Attack!</el-button>
-        <el-button @click="attackDialogVisible = false">Cancel</el-button>
+        <el-button type="danger" @click="doAttack">确认攻击</el-button>
+        <el-button @click="attackDialogVisible = false">取消</el-button>
       </div>
     </el-dialog>
   </div>
@@ -118,22 +118,25 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
-const WS_URL = 'ws://localhost:8080/game/websocket'
+const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/game/websocket'
 
 const player = reactive<any>({
   userId: 0, playerName: '', attack: 0, defense: 0,
   currentHealth: 100, maxHealth: 100,
-  currentLoad: 0, maxCapacity: 50, bag: []
+  currentLoad: 0, maxCapacity: 50, bag: [],
+  equippedWeapon: null, equippedArmor: null, posX: 0, posY: 0
 })
-const room = reactive<any>({ roomName: '', description: '', exits: [], items: [], players: [] })
+const room = reactive<any>({ roomName: '', description: '', exits: [], items: [], players: [], tiles: null, portal: false })
 const messages = ref<string[]>([])
 const commandInput = ref('')
 const disconnected = ref(false)
 const messageArea = ref<any>(null)
 
 let ws: WebSocket | null = null
-let heartbeatTimer: any = null
-let reconnectTimer: any = null
+let heartbeatTimer: ReturnType<typeof setInterval> | null = null
+let reconnectTimer: ReturnType<typeof setTimeout> | null = null
+let reconnectAttempts = 0
+const MAX_RECONNECT_ATTEMPTS = 10
 
 // Item dialog state
 const itemDialogVisible = ref(false)
@@ -156,14 +159,14 @@ function connect() {
   disconnected.value = false
 
   try {
-    ws = new WebSocket(WS_URL + '?token=' + token)
+    ws = new WebSocket(WS_URL + '?token=' + encodeURIComponent(token))
   } catch {
     disconnected.value = true
     return
   }
 
   ws.onopen = () => {
-    ws?.send(JSON.stringify({ action: 'login', data: null, token }))
+    reconnectAttempts = 0
     startHeartbeat()
   }
 
@@ -210,11 +213,15 @@ function stopHeartbeat() {
 
 function scheduleReconnect() {
   if (reconnectTimer) clearTimeout(reconnectTimer)
-  reconnectTimer = setTimeout(() => connect(), 3000)
+  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) return
+  reconnectAttempts++
+  const delay = Math.min(30000, 3000 * Math.pow(2, reconnectAttempts - 1))
+  reconnectTimer = setTimeout(() => connect(), delay)
 }
 
 function reconnect() {
   if (reconnectTimer) clearTimeout(reconnectTimer)
+  reconnectAttempts = 0
   connect()
 }
 
@@ -222,8 +229,8 @@ function sendCommand(cmd: string) {
   if (!cmd || !cmd.trim()) return
   if (ws?.readyState === WebSocket.OPEN) {
     ws.send(JSON.stringify({ action: 'command', data: cmd.trim(), token: sessionStorage.getItem('token') }))
+    commandInput.value = ''
   }
-  commandInput.value = ''
 }
 
 function scrollToBottom() {
@@ -242,7 +249,7 @@ function handleItemAction(item: any, inRoom = false) {
 
 function doItemAction(action: string) {
   if (!selectedItem.value) return
-  sendCommand(action + ' ' + selectedItem.value.name)
+  sendCommand(action + ' "' + selectedItem.value.name + '"')
   itemDialogVisible.value = false
 }
 

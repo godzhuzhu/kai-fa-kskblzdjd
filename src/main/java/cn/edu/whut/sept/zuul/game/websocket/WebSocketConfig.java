@@ -43,6 +43,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     public GameWebSocketHandler gameWebSocketHandler() {
         GameWebSocketHandler handler = new GameWebSocketHandler(game, jwtUtil, messageBridge,
                 redisSessionManager, redisPubSubService);
+        game.setWebSocketHandler(handler);
         if (redisPubSubService != null) {
             redisPubSubService.setHandler(handler);
         }
@@ -51,6 +52,11 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     @Scheduled(fixedRate = 30000)
     public void checkHeartbeats() {
-        gameWebSocketHandler().checkHeartbeats();
+        game.getWebSocketHandler().checkHeartbeats();
+    }
+
+    @Scheduled(fixedRate = 45000)
+    public void respawnItems() {
+        game.respawnItems();
     }
 }

@@ -18,6 +18,7 @@ import cn.edu.whut.sept.zuul.game.Player;
 public abstract class AbstractItem {
 
     private final String name;
+    private final String displayName;
     private final String description;
     private final int weight;
 
@@ -26,13 +27,15 @@ public abstract class AbstractItem {
     private int attackCooldown = 0;    // 冷却毫秒
     private String attackType = "none"; // "melee","ranged","aoe","none"
 
-    public AbstractItem(String name, String description, int weight) {
+    public AbstractItem(String name, String displayName, String description, int weight) {
         this.name = name;
+        this.displayName = displayName;
         this.description = description;
         this.weight = weight;
     }
 
     public String getName() { return name; }
+    public String getDisplayName() { return displayName; }
     public String getDescription() { return description; }
     public int getWeight() { return weight; }
 

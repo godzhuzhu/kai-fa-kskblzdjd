@@ -11,9 +11,9 @@ import cn.edu.whut.sept.zuul.game.Player;
 public class StormCleaver extends AbstractItem {
 
     public StormCleaver() {
-        super("StormCleaver", "A legendary blade crackling with lightning (+15 attack)", 12);
+        super("StormCleaver", "风暴斩刃", "蕴含雷电之力的传说之刃 (+15 攻击)", 12);
         setAttackRange(2);
-        setAttackCooldown(800);
+        setAttackCooldown(1000);
         setAttackType("ranged");
     }
 

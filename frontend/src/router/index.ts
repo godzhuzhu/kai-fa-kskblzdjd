@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
-import GameView from '../views/GameView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -13,15 +12,31 @@ const router = createRouter({
     {
       path: '/game',
       name: 'game',
-      component: GameView,
+      component: () => import('../views/GameView.vue'),
       beforeEnter: (_to, _from, next) => {
         const token = sessionStorage.getItem('token')
         if (!token) {
           next('/')
-        } else {
-          next()
+          return
         }
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]))
+          if (payload.exp * 1000 < Date.now()) {
+            sessionStorage.removeItem('token')
+            sessionStorage.removeItem('userId')
+            next('/')
+            return
+          }
+        } catch {
+          next('/')
+          return
+        }
+        next()
       }
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/'
     }
   ]
 })

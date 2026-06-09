@@ -6,22 +6,29 @@ import cn.edu.whut.sept.zuul.game.combat.event.DeathEvent;
 import cn.edu.whut.sept.zuul.game.combat.event.FightWinEvent;
 import cn.edu.whut.sept.zuul.game.combat.event.IPlayerListener;
 
-public class ImmortalCore extends AbstractItem implements IPlayerListener {
+public class VampireFang extends AbstractItem implements IPlayerListener {
 
-    private boolean used = false;
+    private Player owner;
 
-    public ImmortalCore() {
-        super("ImmortalCore", "不朽核心", "神秘的能量核心 (免疫一次死亡，保留1HP)", 2);
+    public VampireFang() {
+        super("VampireFang", "吸血獠牙", "被诅咒的獠牙 (+8攻击, 攻击回血33%)", 5);
+        setAttackRange(1);
+        setAttackCooldown(600);
+        setAttackType("melee");
     }
 
     @Override
     public void takenBy(Player player) {
+        player.setAttack(player.getAttack() + 8);
+        this.owner = player;
         player.addListener(this);
     }
 
     @Override
     public void droppedBy(Player player) {
+        player.setAttack(player.getAttack() - 8);
         player.removeListener(this);
+        this.owner = null;
     }
 
     @Override
@@ -30,16 +37,14 @@ public class ImmortalCore extends AbstractItem implements IPlayerListener {
 
     @Override
     public void onHurt(Player player, AttackEvent event) {
+        if (player == owner && event.getAttacker() == player) {
+            int heal = Math.max(1, event.getDamage() / 3);
+            player.setCurrentHealth(Math.min(player.getCurrentHealth() + heal, player.getMaxHealth()));
+        }
     }
 
     @Override
     public void onDeath(Player player, DeathEvent event) {
-        if (!used) {
-            used = true;
-            player.setCurrentHealth(1);
-            player.removeListener(this);
-            player.removeFromBag(this);
-        }
     }
 
     @Override

@@ -55,6 +55,12 @@ public class Store {
             ps.setDefense(player.getDefense());
             ps.setCurrentHealth(player.getCurrentHealth());
             ps.setMaxHealth(player.getMaxHealth());
+            if (player.getEquippedWeapon() != null) {
+                ps.setEquippedWeaponName(player.getEquippedWeapon().getName());
+            }
+            if (player.getEquippedArmor() != null) {
+                ps.setEquippedArmorName(player.getEquippedArmor().getName());
+            }
             playerSavers.add(ps);
         }
         store.setPlayers(playerSavers);

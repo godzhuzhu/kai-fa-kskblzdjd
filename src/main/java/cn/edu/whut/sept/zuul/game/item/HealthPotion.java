@@ -2,10 +2,10 @@ package cn.edu.whut.sept.zuul.game.item;
 
 import cn.edu.whut.sept.zuul.game.Player;
 
-public class StonehideElixir extends AbstractItem {
+public class HealthPotion extends AbstractItem {
 
-    public StonehideElixir() {
-        super("StonehideElixir", "石肤药剂", "使皮肤坚如磐石的药水 (+15 防御)", 3);
+    public HealthPotion() {
+        super("HealthPotion", "大血瓶", "散发光芒的红色药剂 (+50 生命)", 3);
     }
 
     @Override
@@ -18,7 +18,8 @@ public class StonehideElixir extends AbstractItem {
 
     @Override
     public void usedBy(Player player) {
-        player.setDefense(player.getDefense() + 15);
+        int heal = 50;
+        player.setCurrentHealth(Math.min(player.getCurrentHealth() + heal, player.getMaxHealth()));
         player.removeFromBag(this);
     }
 }

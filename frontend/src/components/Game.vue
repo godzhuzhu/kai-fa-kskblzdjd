@@ -96,7 +96,7 @@
     </div>
 
     <!-- Item Action Dialog -->
-    <el-dialog v-model="itemDialogVisible" :title="''物品：'' + (selectedItem ? selectedItem.name : '')" width="300px" top="30vh" class="item-dialog">
+    <el-dialog v-model="itemDialogVisible" :title="'物品：' + (selectedItem ? selectedItem.name : '')" width="300px" top="30vh" class="item-dialog">
       <div class="dialog-actions">
         <el-button v-if="selectedItemInRoom" type="primary" @click="doItemAction('take')">拾取</el-button>
         <el-button v-if="!selectedItemInRoom" type="primary" @click="doItemAction('drop')">丢弃</el-button>

@@ -46,11 +46,11 @@ public class Game {
     private void createRooms() {
         allRooms = new ArrayList<>();
 
-        Room outside = new Room("outside", "outside the main entrance of the university");
-        Room theater = new Room("theater", "in a lecture theater");
-        Room pub = new Room("pub", "in the campus pub");
-        Room lab = new Room("lab", "in a computing lab");
-        Room office = new Room("office", "in the computing admin office");
+        Room outside = new Room("outside", "大学主入口外");
+        Room theater = new Room("theater", "报告厅内");
+        Room pub = new Room("pub", "校园酒吧内");
+        Room lab = new Room("lab", "计算机实验室内");
+        Room office = new Room("office", "计算机管理办公室内");
 
         outside.setExit("east", theater);
         outside.setExit("south", lab);

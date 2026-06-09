@@ -205,6 +205,13 @@ function transMsg(msg: string): string {
   r = r.replace(/\b(outside|theater|pub|lab|office)\b/gi, w => roomNameMap[w.toLowerCase()] || w)
   r = r.replace(/Items:/g, '物品：').replace(/Exits:/g, '出口：')
   r = r.replace(/\((\d+)kg\)/g, '（$1kg）')
+  r = r.replace(/\bgo\b(?= <方向>)/gi, '前往')
+  r = r.replace(/\bback\b/gi, '返回')
+  r = r.replace(/\btake\b(?= <物品>)/gi, '拾取')
+  r = r.replace(/\bdrop\b(?= <物品>)/gi, '丢弃')
+  r = r.replace(/\buse\b(?= <物品>)/gi, '使用')
+  r = r.replace(/\bhelp\b/gi, '帮助')
+  r = r.replace(/\bquit\b/gi, '退出')
   return r
 }
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'

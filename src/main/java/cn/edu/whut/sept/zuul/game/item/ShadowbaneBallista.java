@@ -9,7 +9,10 @@ import cn.edu.whut.sept.zuul.game.combat.event.IPlayerListener;
 public class ShadowbaneBallista extends AbstractItem implements IPlayerListener {
 
     public ShadowbaneBallista() {
-        super("ShadowbaneBallista", "A dark ballista (extra 5 damage on attack)", 6);
+        super("ShadowbaneBallista", "暗影弩炮", "黑暗力量铸造的重弩 (攻击附加5伤害)", 6);
+        setAttackRange(3);
+        setAttackCooldown(1500);
+        setAttackType("ranged");
     }
 
     @Override

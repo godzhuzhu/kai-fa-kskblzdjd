@@ -5,10 +5,13 @@ import cn.edu.whut.sept.zuul.game.command.BackCommand;
 import cn.edu.whut.sept.zuul.game.command.DropCommand;
 import cn.edu.whut.sept.zuul.game.command.GoCommand;
 import cn.edu.whut.sept.zuul.game.command.HelpCommand;
+import cn.edu.whut.sept.zuul.game.command.ItemsCommand;
 import cn.edu.whut.sept.zuul.game.command.LoadCommand;
+import cn.edu.whut.sept.zuul.game.command.LookCommand;
 import cn.edu.whut.sept.zuul.game.command.SaveCommand;
 import cn.edu.whut.sept.zuul.game.command.TakeCommand;
 import cn.edu.whut.sept.zuul.game.command.UseCommand;
+import cn.edu.whut.sept.zuul.game.store.StoreManager;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -17,7 +20,7 @@ public class CommandWords
 {
     private HashMap<String, Command> commands;
 
-    public CommandWords()
+    public CommandWords(StoreManager storeManager)
     {
         commands = new HashMap<String, Command>();
         commands.put("go", new GoCommand());
@@ -26,8 +29,14 @@ public class CommandWords
         commands.put("take", new TakeCommand());
         commands.put("drop", new DropCommand());
         commands.put("use", new UseCommand());
-        commands.put("save", new SaveCommand());
-        commands.put("load", new LoadCommand());
+        commands.put("look", new LookCommand());
+        commands.put("items", new ItemsCommand());
+        SaveCommand save = new SaveCommand();
+        save.setStoreManager(storeManager);
+        commands.put("save", save);
+        LoadCommand load = new LoadCommand();
+        load.setStoreManager(storeManager);
+        commands.put("load", load);
         commands.put("help", new HelpCommand());
         commands.put("quit", new QuitCommand());
     }

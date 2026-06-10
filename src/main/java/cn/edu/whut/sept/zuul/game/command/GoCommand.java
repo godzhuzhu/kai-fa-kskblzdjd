@@ -20,7 +20,7 @@ public class GoCommand extends Command {
     @Override
     public boolean execute(Game game, Player player) {
         if (!hasSecondWord()) {
-            game.getMessageBridge().send(new SinglePlayerMessage("Go where?"), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("去哪里？"), player);
             return false;
         }
 
@@ -32,28 +32,38 @@ public class GoCommand extends Command {
         Room nextRoom = currentRoom.getExitMap().get(direction);
 
         if (nextRoom == null) {
-            game.getMessageBridge().send(new SinglePlayerMessage("There is no door!"), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("那里没有门！"), player);
             return false;
         }
 
         // 传送房间处理
         if (nextRoom.isPortal()) {
             game.getMessageBridge().send(
-                new SinglePlayerMessage("A mysterious force transports you..."), player);
-            // 先进入传送房间（记录历史）
-            player.moveTo(nextRoom);
-            // 再从所有房间中随机传送
+                new SinglePlayerMessage("一股神秘的力量将你传送..."), player);
             Room randomRoom = game.getRandomRoom();
             if (randomRoom != null) {
                 player.moveTo(randomRoom);
+            } else {
+                player.moveTo(nextRoom);
             }
         } else {
             player.moveTo(nextRoom);
         }
-
         // 输出新房间信息
+        Room newRoom = player.getCurrentRoom();
+        int[] sp = newRoom.getSpawnPoint();
+        String oldRoomName = currentRoom.getName();
+
+        player.setPosX(sp[0]);
+        player.setPosY(sp[1]);
+        if (game.getWebSocketHandler() != null) {
+            game.getWebSocketHandler().onPlayerMoved(player, oldRoomName);
+            game.getWebSocketHandler().roomPush(currentRoom);
+            game.getWebSocketHandler().roomPush(newRoom);
+            game.getWebSocketHandler().playerPush(player);
+        }
         game.getMessageBridge().send(
-            new SinglePlayerMessage(player.getCurrentRoom().getLongDescription()), player);
+            new SinglePlayerMessage(newRoom.getLongDescription()), player);
         return false;
     }
 }

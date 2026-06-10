@@ -14,14 +14,19 @@ import cn.edu.whut.sept.zuul.game.message.SinglePlayerMessage;
 public class HelpCommand extends Command {
 
     private static final String HELP_TEXT =
-        "Your available commands are:\n"
-        + "  go <direction>  - move to a neighboring room\n"
-        + "  back            - return to the previous room\n"
-        + "  take <item>     - pick up an item\n"
-        + "  drop <item>     - drop an item from your bag\n"
-        + "  use <item>      - use an item from your bag\n"
-        + "  help            - show this help message\n"
-        + "  quit            - quit the game";
+        "可用命令：\n"
+        + "  go <方向>     - 移动到相邻房间\n"
+        + "  back          - 返回上一个房间\n"
+        + "  look          - 查看当前房间\n"
+        + "  take <物品>   - 拾取物品\n"
+        + "  drop <物品>   - 丢弃物品\n"
+        + "  use <物品>    - 使用物品\n"
+        + "  items         - 查看背包\n"
+        + "  attack <玩家> - 攻击其他玩家\n"
+        + "  save          - 保存游戏\n"
+        + "  load          - 读取存档\n"
+        + "  help          - 显示帮助\n"
+        + "  quit          - 退出游戏";
 
     @Override
     public boolean execute(Game game, Player player) {

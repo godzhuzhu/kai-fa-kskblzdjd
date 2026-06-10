@@ -1,0 +1,11 @@
+node_modules/
+.git/
+.idea/
+*.iml
+data/
+.env
+*.log
+frontend/node_modules/
+.vscode/
+.DS_Store
+Thumbs.db

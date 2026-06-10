@@ -9,7 +9,10 @@ import cn.edu.whut.sept.zuul.game.combat.event.IPlayerListener;
 public class BloodDagger extends AbstractItem implements IPlayerListener {
 
     public BloodDagger() {
-        super("BloodDagger", "A blood-thirsty dagger (heal 20 HP on kill)", 4);
+        super("BloodDagger", "嗜血匕首", "渴望鲜血的匕首 (击杀回复15生命)", 4);
+        setAttackRange(1);
+        setAttackCooldown(400);
+        setAttackType("melee");
     }
 
     @Override
@@ -36,7 +39,7 @@ public class BloodDagger extends AbstractItem implements IPlayerListener {
 
     @Override
     public void onFightWin(Player player, FightWinEvent event) {
-        int newHealth = Math.min(player.getCurrentHealth() + 20, player.getMaxHealth());
+        int newHealth = Math.min(player.getCurrentHealth() + 15, player.getMaxHealth());
         player.setCurrentHealth(newHealth);
     }
 }

@@ -20,7 +20,7 @@ public class DropCommand extends Command {
     @Override
     public boolean execute(Game game, Player player) {
         if (!hasSecondWord()) {
-            game.getMessageBridge().send(new SinglePlayerMessage("Drop what?"), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("丢弃什么？"), player);
             return false;
         }
 
@@ -36,13 +36,13 @@ public class DropCommand extends Command {
         }
 
         if (target == null) {
-            game.getMessageBridge().send(new SinglePlayerMessage("You don't have this item."), player);
+            game.getMessageBridge().send(new SinglePlayerMessage("你没有这个物品。"), player);
             return false;
         }
 
         player.dropItem(target);
         player.getCurrentRoom().addItem(target);
-        game.getMessageBridge().send(new SinglePlayerMessage("You dropped the " + target.getName() + "."), player);
+        game.getMessageBridge().send(new SinglePlayerMessage("你丢掉了 " + target.getName() + "。"), player);
         return false;
     }
 }

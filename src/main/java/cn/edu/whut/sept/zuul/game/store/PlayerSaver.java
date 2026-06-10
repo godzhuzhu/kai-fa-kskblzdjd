@@ -15,6 +15,8 @@ public class PlayerSaver {
     private int defense;
     private int currentHealth;
     private int maxHealth;
+    private String equippedWeaponName;
+    private String equippedArmorName;
 
     public int getUserId() { return userId; }
     public void setUserId(int userId) { this.userId = userId; }
@@ -36,4 +38,8 @@ public class PlayerSaver {
     public void setCurrentHealth(int currentHealth) { this.currentHealth = currentHealth; }
     public int getMaxHealth() { return maxHealth; }
     public void setMaxHealth(int maxHealth) { this.maxHealth = maxHealth; }
+    public String getEquippedWeaponName() { return equippedWeaponName; }
+    public void setEquippedWeaponName(String equippedWeaponName) { this.equippedWeaponName = equippedWeaponName; }
+    public String getEquippedArmorName() { return equippedArmorName; }
+    public void setEquippedArmorName(String equippedArmorName) { this.equippedArmorName = equippedArmorName; }
 }

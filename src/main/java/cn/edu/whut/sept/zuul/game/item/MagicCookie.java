@@ -11,7 +11,7 @@ import cn.edu.whut.sept.zuul.game.Player;
 public class MagicCookie extends AbstractItem {
 
     public MagicCookie() {
-        super("MagicCookie", "A magical cookie that increases carrying capacity (+20 max load)", 1);
+        super("MagicCookie", "魔法饼干", "神奇的饼干，增加负重上限 (+20)", 1);
     }
 
     @Override
@@ -25,5 +25,6 @@ public class MagicCookie extends AbstractItem {
     @Override
     public void usedBy(Player player) {
         player.setMaxCapacity(player.getMaxCapacity() + 20);
+        player.removeFromBag(this);
     }
 }

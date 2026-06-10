@@ -11,7 +11,7 @@ public class ImmortalCore extends AbstractItem implements IPlayerListener {
     private boolean used = false;
 
     public ImmortalCore() {
-        super("ImmortalCore", "A mysterious core (survive at 1 HP, once)", 2);
+        super("ImmortalCore", "不朽核心", "神秘的能量核心 (免疫一次死亡，保留1HP)", 2);
     }
 
     @Override
@@ -38,7 +38,7 @@ public class ImmortalCore extends AbstractItem implements IPlayerListener {
             used = true;
             player.setCurrentHealth(1);
             player.removeListener(this);
-            player.getBag().remove(this);
+            player.removeFromBag(this);
         }
     }
 

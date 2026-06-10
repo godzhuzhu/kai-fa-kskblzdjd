@@ -11,17 +11,17 @@ import cn.edu.whut.sept.zuul.game.Player;
 public class DragonscaleBulwark extends AbstractItem {
 
     public DragonscaleBulwark() {
-        super("DragonscaleBulwark", "A shield made of dragon scales (+8 defense)", 10);
+        super("DragonscaleBulwark", "龙鳞壁垒", "龙鳞锻造的盾牌 (+12 防御)", 10);
     }
 
     @Override
     public void takenBy(Player player) {
-        player.setDefense(player.getDefense() + 8);
+        player.setDefense(player.getDefense() + 12);
     }
 
     @Override
     public void droppedBy(Player player) {
-        player.setDefense(player.getDefense() - 8);
+        player.setDefense(player.getDefense() - 12);
     }
 
     @Override

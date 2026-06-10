@@ -1,15 +1,23 @@
 package cn.edu.whut.sept.zuul;
 
+import cn.edu.whut.sept.zuul.game.store.StoreManager;
+
 import java.util.Scanner;
 
 public class Parser
 {
-    private CommandWords commands;  // holds all valid command words
-    private Scanner reader;         // source of command input
+    private CommandWords commands;
+    private Scanner reader;
+
+    public Parser(StoreManager storeManager)
+    {
+        commands = new CommandWords(storeManager);
+        reader = new Scanner(System.in);
+    }
 
     public Parser()
     {
-        commands = new CommandWords();
+        commands = new CommandWords(null);
         reader = new Scanner(System.in);
     }
 
@@ -31,11 +39,7 @@ public class Parser
             }
         }
 
-        Command command = commands.get(word1);
-        if(command != null) {
-            command.setSecondWord(word2);
-        }
-        return command;
+        return wrapCommand(commands.get(word1), word2);
     }
 
     public Command parseCommand(String inputLine) {
@@ -50,11 +54,23 @@ public class Parser
             }
         }
 
-        Command command = commands.get(word1);
-        if(command != null) {
-            command.setSecondWord(word2);
-        }
-        return command;
+        return wrapCommand(commands.get(word1), word2);
+    }
+
+    private static Command wrapCommand(Command base, String secondWord) {
+        if (base == null) return null;
+        return new Command() {
+            @Override
+            public boolean execute(Game game, cn.edu.whut.sept.zuul.game.Player player) {
+                base.setSecondWord(secondWord);
+                return base.execute(game, player);
+            }
+
+            @Override
+            public String getSecondWord() { return secondWord; }
+            @Override
+            public boolean hasSecondWord() { return secondWord != null; }
+        };
     }
 
     public void showCommands()

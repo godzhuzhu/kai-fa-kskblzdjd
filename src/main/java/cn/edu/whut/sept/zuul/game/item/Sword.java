@@ -11,7 +11,10 @@ import cn.edu.whut.sept.zuul.game.Player;
 public class Sword extends AbstractItem {
 
     public Sword() {
-        super("Sword", "A sharp iron sword (+10 attack)", 8);
+        super("Sword", "铁剑", "一把锋利的铁剑 (+10 攻击)", 8);
+        setAttackRange(1);
+        setAttackCooldown(500);
+        setAttackType("melee");
     }
 
     @Override

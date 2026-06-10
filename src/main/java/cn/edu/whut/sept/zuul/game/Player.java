@@ -6,8 +6,10 @@ import cn.edu.whut.sept.zuul.game.combat.event.FightWinEvent;
 import cn.edu.whut.sept.zuul.game.combat.event.IPlayerListener;
 import cn.edu.whut.sept.zuul.game.item.AbstractItem;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Stack;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 玩家类 — 管理玩家属性、背包、房间移动历史和战斗属性。
@@ -27,8 +29,13 @@ public class Player {
     private final List<AbstractItem> bag;
     private int maxCapacity;
 
+    // 装备栏
+    private AbstractItem equippedWeapon;
+    private AbstractItem equippedArmor;
+
     // 移动历史
     private final Stack<Room> previousRooms;
+    private final Object moveLock = new Object();
 
     // 战斗属性（v1.0 预留，v2.0 #11 启用）
     private int attack;
@@ -39,6 +46,10 @@ public class Player {
     // 在线状态（v2.0 #9 启用）
     private boolean isOnline;
 
+    // 2D 坐标 (#26)
+    private int posX;
+    private int posY;
+
     // 事件监听（v2.0 #11 启用）
     private final List<IPlayerListener> listeners;
     private long lastAttackTime;
@@ -47,7 +58,7 @@ public class Player {
         this.userId = userId;
         this.playerName = playerName;
         this.currentRoom = startingRoom;
-        this.bag = new ArrayList<>();
+        this.bag = Collections.synchronizedList(new ArrayList<>());
         this.maxCapacity = 50;
         this.previousRooms = new Stack<>();
         this.attack = 10;
@@ -55,8 +66,12 @@ public class Player {
         this.currentHealth = 100;
         this.maxHealth = 100;
         this.isOnline = false;
-        this.listeners = new ArrayList<>();
+        this.posX = 1;
+        this.posY = 1;
+        this.listeners = new CopyOnWriteArrayList<>();
         this.lastAttackTime = 0;
+        this.equippedWeapon = null;
+        this.equippedArmor = null;
     }
 
     // ========== 基础 ==========
@@ -126,19 +141,68 @@ public class Player {
         return true;
     }
 
+    public void removeFromBag(AbstractItem item) {
+        bag.remove(item);
+    }
+
+    public AbstractItem getEquippedWeapon() { return equippedWeapon; }
+    public AbstractItem getEquippedArmor() { return equippedArmor; }
+
+    public boolean equipWeapon(AbstractItem item) {
+        synchronized (bag) {
+            if (!bag.contains(item) || !item.isWeapon()) return false;
+            if (equippedWeapon != null) unequipWeapon();
+            bag.remove(item);
+            equippedWeapon = item;
+        }
+        return true;
+    }
+
+    public void unequipWeapon() {
+        if (equippedWeapon == null) return;
+        synchronized (bag) {
+            bag.add(equippedWeapon);
+            equippedWeapon = null;
+        }
+    }
+
+    public boolean equipArmor(AbstractItem item) {
+        if (item.isWeapon()) return false;
+        if (item.getWeight() < 1) return false;
+        synchronized (bag) {
+            if (!bag.contains(item)) return false;
+            if (equippedArmor != null) unequipArmor();
+            bag.remove(item);
+            equippedArmor = item;
+        }
+        return true;
+    }
+
+    public void unequipArmor() {
+        if (equippedArmor == null) return;
+        synchronized (bag) {
+            bag.add(equippedArmor);
+            equippedArmor = null;
+        }
+    }
+
     // ========== 移动 ==========
 
     public void moveTo(Room room) {
-        previousRooms.push(this.currentRoom);
-        this.currentRoom = room;
+        synchronized (moveLock) {
+            previousRooms.push(this.currentRoom);
+            this.currentRoom = room;
+        }
     }
 
     public Room goBack() {
-        if (previousRooms.isEmpty()) {
-            return null;
+        synchronized (moveLock) {
+            if (previousRooms.isEmpty()) {
+                return null;
+            }
+            this.currentRoom = previousRooms.pop();
+            return this.currentRoom;
         }
-        this.currentRoom = previousRooms.pop();
-        return this.currentRoom;
     }
 
     public Stack<Room> getPreviousRooms() {
@@ -212,19 +276,19 @@ public class Player {
     }
 
     public void notifyHurt(AttackEvent event) {
-        for (IPlayerListener l : new ArrayList<>(listeners)) {
+        for (IPlayerListener l : listeners) {
             l.onHurt(this, event);
         }
     }
 
     public void notifyDeath(DeathEvent event) {
-        for (IPlayerListener l : new ArrayList<>(listeners)) {
+        for (IPlayerListener l : listeners) {
             l.onDeath(this, event);
         }
     }
 
     public void notifyFightWin(FightWinEvent event) {
-        for (IPlayerListener l : new ArrayList<>(listeners)) {
+        for (IPlayerListener l : listeners) {
             l.onFightWin(this, event);
         }
     }
@@ -236,4 +300,11 @@ public class Player {
     public void setLastAttackTime(long lastAttackTime) {
         this.lastAttackTime = lastAttackTime;
     }
+
+    // ========== 2D 坐标 ==========
+
+    public int getPosX() { return posX; }
+    public void setPosX(int posX) { this.posX = posX; }
+    public int getPosY() { return posY; }
+    public void setPosY(int posY) { this.posY = posY; }
 }

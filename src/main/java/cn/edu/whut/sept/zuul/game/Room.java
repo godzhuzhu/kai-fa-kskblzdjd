@@ -236,6 +236,11 @@ public class Room {
 
     public int[] getSpawnPoint() { return spawnPoint; }
     public void setSpawnPoint(int x, int y) { this.spawnPoint = new int[]{x, y}; }
+    public boolean isFloor(int x, int y) {
+        if (tiles == null) return true;
+        if (x < 0 || x >= width || y < 0 || y >= height) return false;
+        return tiles[y][x] == TileType.FLOOR;
+    }
 
     public boolean isWalkable(int x, int y) {
         if (tiles == null) return true;
@@ -297,7 +302,7 @@ public class Room {
         for (int attempt = 0; attempt < maxAttempts; attempt++) {
             x = 1 + (int) (Math.random() * (width - 2));
             y = 1 + (int) (Math.random() * (height - 2));
-            if (tiles == null || isWalkable(x, y)) {
+            if (tiles == null || isFloor(x, y)) {
                 found = true;
                 break;
             }
@@ -305,7 +310,7 @@ public class Room {
         if (!found && tiles != null) {
             for (int ty = 1; ty < height - 1 && !found; ty++)
                 for (int tx = 1; tx < width - 1 && !found; tx++)
-                    if (isWalkable(tx, ty)) { x = tx; y = ty; found = true; }
+                    if (isFloor(tx, ty)) { x = tx; y = ty; found = true; }
         }
         itemSpawns.put(item, new int[]{x, y});
     }

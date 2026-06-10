@@ -89,7 +89,19 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         }
 
         sendToSession(session, new WebSocketOutgoingPayload("playerPush", PlayerVO.from(player)));
-        roomPush(player.getCurrentRoom());
+
+        Room currentRoom = player.getCurrentRoom();
+        List<Player> playersHere = getPlayersInRoom(currentRoom, null);
+        List<RoomPlayerVO> roomPlayerVOs = RoomPlayerVO.fromList(playersHere);
+        sendToSession(session, new WebSocketOutgoingPayload("roomPush", RoomVO.from(currentRoom, roomPlayerVOs)));
+
+        if (redisPubSubService != null) {
+            try {
+                WebSocketOutgoingPayload payload = new WebSocketOutgoingPayload("roomPush", RoomVO.from(currentRoom, roomPlayerVOs));
+                String json = objectMapper.writeValueAsString(payload);
+                redisPubSubService.publish(currentRoom.getName(), json);
+            } catch (Exception ignored) {}
+        }
     }
 
     @Override

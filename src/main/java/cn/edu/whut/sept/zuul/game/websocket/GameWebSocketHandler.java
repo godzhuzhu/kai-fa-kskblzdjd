@@ -435,12 +435,15 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         dead.setAttack(10);
         dead.setDefense(5);
         Room oldRoom = dead.getCurrentRoom();
+        String oldRoomName = oldRoom.getName();
         Room spawnRoom = game.getStartingRoom();
         dead.getPreviousRooms().clear();
         dead.moveTo(spawnRoom);
         int[] sp = spawnRoom.getSpawnPoint();
         dead.setPosX(sp[0]);
         dead.setPosY(sp[1]);
+        onPlayerMoved(dead, oldRoomName);
+        playerPush(dead);
         roomPush(oldRoom);
         roomPush(spawnRoom);
     }

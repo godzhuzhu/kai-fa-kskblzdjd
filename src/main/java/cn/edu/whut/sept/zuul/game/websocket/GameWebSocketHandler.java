@@ -89,19 +89,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         }
 
         sendToSession(session, new WebSocketOutgoingPayload("playerPush", PlayerVO.from(player)));
-
-        Room currentRoom = player.getCurrentRoom();
-        List<Player> playersHere = getPlayersInRoom(currentRoom, null);
-        List<RoomPlayerVO> roomPlayerVOs = RoomPlayerVO.fromList(playersHere);
-        sendToSession(session, new WebSocketOutgoingPayload("roomPush", RoomVO.from(currentRoom, roomPlayerVOs)));
-
-        if (redisPubSubService != null) {
-            try {
-                WebSocketOutgoingPayload payload = new WebSocketOutgoingPayload("roomPush", RoomVO.from(currentRoom, roomPlayerVOs));
-                String json = objectMapper.writeValueAsString(payload);
-                redisPubSubService.publish(currentRoom.getName(), json);
-            } catch (Exception ignored) {}
-        }
+        roomPush(player.getCurrentRoom());
     }
 
     @Override
@@ -475,20 +463,18 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         List<RoomPlayerVO> playerVOs = RoomPlayerVO.fromList(playersInRoom);
         WebSocketOutgoingPayload payload = new WebSocketOutgoingPayload("roomPush", RoomVO.from(room, playerVOs));
 
+        for (Player p : playersInRoom) {
+            GameSession session = playerSessions.get(p.getUserId());
+            if (session != null) {
+                sendToSession(session.getWebSocketSession(), payload);
+            }
+        }
+
         if (redisPubSubService != null) {
             try {
                 String json = objectMapper.writeValueAsString(payload);
                 redisPubSubService.publish(room.getName(), json);
             } catch (Exception ignored) {
-            }
-        }
-
-        if (redisPubSubService == null) {
-            for (Player p : playersInRoom) {
-                GameSession session = playerSessions.get(p.getUserId());
-                if (session != null) {
-                    sendToSession(session.getWebSocketSession(), payload);
-                }
             }
         }
     }

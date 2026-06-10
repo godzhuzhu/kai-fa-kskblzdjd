@@ -120,9 +120,16 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         if ("command".equals(action)) {
             String cmd = payload.getData();
             Player player = gameSession.getPlayer();
+            Room oldRoom = player.getCurrentRoom();
+            String oldRoomName = oldRoom.getName();
             game.processCommand(player, cmd);
+            Room newRoom = player.getCurrentRoom();
+            if (!oldRoomName.equals(newRoom.getName())) {
+                onPlayerMoved(player, oldRoomName);
+                roomPush(oldRoom);
+            }
             playerPush(player);
-            roomPush(player.getCurrentRoom());
+            roomPush(newRoom);
             messagePush(player, game.getLastCommandOutput());
         }
 

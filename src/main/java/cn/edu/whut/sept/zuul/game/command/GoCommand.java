@@ -49,13 +49,16 @@ public class GoCommand extends Command {
         } else {
             player.moveTo(nextRoom);
         }
-
         // 输出新房间信息
         Room newRoom = player.getCurrentRoom();
         int[] sp = newRoom.getSpawnPoint();
+        String oldRoomName = currentRoom.getName();
+
         player.setPosX(sp[0]);
         player.setPosY(sp[1]);
         if (game.getWebSocketHandler() != null) {
+            game.getWebSocketHandler().onPlayerMoved(player, oldRoomName);
+            game.getWebSocketHandler().roomPush(currentRoom);
             game.getWebSocketHandler().roomPush(newRoom);
             game.getWebSocketHandler().playerPush(player);
         }

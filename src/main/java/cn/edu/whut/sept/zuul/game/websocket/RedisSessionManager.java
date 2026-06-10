@@ -34,6 +34,15 @@ public class RedisSessionManager {
                 String.valueOf(player.getUserId()));
     }
 
+    public void playerMoved(Player player, String oldRoomName) {
+        String key = SESSION_PREFIX + player.getUserId();
+        redis.opsForHash().put(key, "currentRoom", player.getCurrentRoom().getName());
+        redis.expire(key, 120, TimeUnit.SECONDS);
+        redis.opsForSet().remove(ROOM_PLAYERS_PREFIX + oldRoomName, String.valueOf(player.getUserId()));
+        redis.opsForSet().add(ROOM_PLAYERS_PREFIX + player.getCurrentRoom().getName(),
+                String.valueOf(player.getUserId()));
+    }
+
     public void playerOffline(Player player) {
         String key = SESSION_PREFIX + player.getUserId();
         redis.delete(key);

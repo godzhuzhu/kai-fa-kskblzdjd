@@ -220,10 +220,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     }
                 }
                 Room oldRoom = currentRoom;
+                String oldRoomName = oldRoom.getName();
                 player.moveTo(nextRoom);
                 int[] sp = nextRoom.getSpawnPoint();
                 player.setPosX(sp[0]);
                 player.setPosY(sp[1]);
+                onPlayerMoved(player, oldRoomName);
                 playerPush(player);
                 roomPush(oldRoom);
                 roomPush(player.getCurrentRoom());
@@ -463,20 +465,18 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         List<RoomPlayerVO> playerVOs = RoomPlayerVO.fromList(playersInRoom);
         WebSocketOutgoingPayload payload = new WebSocketOutgoingPayload("roomPush", RoomVO.from(room, playerVOs));
 
+        for (Player p : playersInRoom) {
+            GameSession session = playerSessions.get(p.getUserId());
+            if (session != null) {
+                sendToSession(session.getWebSocketSession(), payload);
+            }
+        }
+
         if (redisPubSubService != null) {
             try {
                 String json = objectMapper.writeValueAsString(payload);
                 redisPubSubService.publish(room.getName(), json);
             } catch (Exception ignored) {
-            }
-        }
-
-        if (redisPubSubService == null) {
-            for (Player p : playersInRoom) {
-                GameSession session = playerSessions.get(p.getUserId());
-                if (session != null) {
-                    sendToSession(session.getWebSocketSession(), payload);
-                }
             }
         }
     }
@@ -569,7 +569,6 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     public void checkHeartbeats() {
         if (redisSessionManager != null) {
             redisSessionManager.checkHeartbeats(HEARTBEAT_TIMEOUT);
-            return;
         }
 
         long now = System.currentTimeMillis();
@@ -602,6 +601,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 session.sendMessage(new TextMessage(objectMapper.writeValueAsString(payload)));
             }
         } catch (IOException ignored) {
+        }
+    }
+
+    public void onPlayerMoved(Player player, String oldRoomName) {
+        if (redisSessionManager != null) {
+            redisSessionManager.playerMoved(player, oldRoomName);
         }
     }
 

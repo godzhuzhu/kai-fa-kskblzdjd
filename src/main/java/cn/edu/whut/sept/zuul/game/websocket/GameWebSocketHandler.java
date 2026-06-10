@@ -220,10 +220,12 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     }
                 }
                 Room oldRoom = currentRoom;
+                String oldRoomName = oldRoom.getName();
                 player.moveTo(nextRoom);
                 int[] sp = nextRoom.getSpawnPoint();
                 player.setPosX(sp[0]);
                 player.setPosY(sp[1]);
+                onPlayerMoved(player, oldRoomName);
                 playerPush(player);
                 roomPush(oldRoom);
                 roomPush(player.getCurrentRoom());
@@ -602,8 +604,10 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    public boolean isPlayerOnline(int userId) {
-        return playerSessions.containsKey(userId);
+    public void onPlayerMoved(Player player, String oldRoomName) {
+        if (redisSessionManager != null) {
+            redisSessionManager.playerMoved(player, oldRoomName);
+        }
     }
 
     private String getTokenParam(WebSocketSession session) {

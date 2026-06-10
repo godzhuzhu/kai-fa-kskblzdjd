@@ -581,7 +581,6 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     public void checkHeartbeats() {
         if (redisSessionManager != null) {
             redisSessionManager.checkHeartbeats(HEARTBEAT_TIMEOUT);
-            return;
         }
 
         long now = System.currentTimeMillis();

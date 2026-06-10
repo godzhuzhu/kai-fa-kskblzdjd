@@ -6,6 +6,8 @@ import cn.edu.whut.sept.zuul.game.user.entity.User;
 import cn.edu.whut.sept.zuul.game.user.repository.UserRepository;
 import cn.edu.whut.sept.zuul.game.user.security.JwtUtil;
 import cn.edu.whut.sept.zuul.game.user.vo.LoginVO;
+import cn.edu.whut.sept.zuul.game.websocket.GameWebSocketHandler;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -15,11 +17,14 @@ public class UserService implements IUserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final GameWebSocketHandler webSocketHandler;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil,
+                       @Lazy GameWebSocketHandler webSocketHandler) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.webSocketHandler = webSocketHandler;
     }
 
     @Override
@@ -29,6 +34,10 @@ public class UserService implements IUserService {
 
         if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid username or password");
+        }
+
+        if (webSocketHandler.isPlayerOnline(user.getId().intValue())) {
+            throw new RuntimeException("该账号已在其他地方登录");
         }
 
         String token = jwtUtil.generateToken(user.getId().intValue());

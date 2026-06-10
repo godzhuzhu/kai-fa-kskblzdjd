@@ -602,6 +602,10 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    public boolean isPlayerOnline(int userId) {
+        return playerSessions.containsKey(userId);
+    }
+
     private String getTokenParam(WebSocketSession session) {
         String query = session.getUri().getQuery();
         if (query != null) {

@@ -554,7 +554,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 GameSession session = playerSessions.get(id);
                 if (session != null && session.getWebSocketSession().isOpen()) {
                     Player p = session.getPlayer();
-                    if (p.isOnline() && p != exclude) {
+                    if (p.isOnline() && p.getCurrentRoom() == room && p != exclude) {
                         result.add(p);
                     }
                 } else if (session != null) {

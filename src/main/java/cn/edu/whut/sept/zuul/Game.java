@@ -167,12 +167,18 @@ public class Game {
         return playerMap.computeIfAbsent(userId, id -> new Player(id, "Player" + id, startingRoom));
     }
 
-    public void processCommand(Player p, String cmd) {
+    public String processCommand(Player p, String cmd) {
         Command command = parser.parseCommand(cmd);
         if (command == null) {
-            messageBridge.send(new SinglePlayerMessage("I don't understand..."), p);
+            String msg = "???????????...";
+            messageBridge.send(new SinglePlayerMessage(msg), p);
+            return msg;
         } else {
             command.execute(this, p);
+            if (messageBridge instanceof ConsoleMessageBridge) {
+                return ((ConsoleMessageBridge) messageBridge).getLastMessage();
+            }
+            return "";
         }
     }
 

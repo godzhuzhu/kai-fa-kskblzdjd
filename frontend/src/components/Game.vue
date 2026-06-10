@@ -1,5 +1,14 @@
 <template>
   <div class="game-container">
+        <!-- Settings Bar -->
+    <div class="settings-bar">
+      <span class="settings-welcome">
+        {{ player.playerName || 'Player' }}
+      </span>
+      <el-button class="settings-btn" @click="settingsVisible = true">
+        <el-icon><Setting /></el-icon> ??
+      </el-button>
+    </div>
     <div v-if="disconnected" class="reconnect-banner">
       Connection lost. <a href="#" @click.prevent="reconnect">点此重连</a>
     </div>
@@ -114,10 +123,52 @@
       </div>
     </el-dialog>
   </div>
+    <!-- Settings Dialog -->
+    <el-dialog v-model="settingsVisible" title="??" width="420px" top="15vh" class="settings-dialog">
+      <el-tabs v-model="settingsTab">
+        <el-tab-pane label="????" name="password">
+          <el-form label-position="top" class="settings-form">
+            <el-form-item label="???">
+              <el-input class="settings-input" v-model="pwForm.oldPassword" type="password" show-password placeholder="?????" />
+            </el-form-item>
+            <el-form-item label="???">
+              <el-input class="settings-input" v-model="pwForm.newPassword" type="password" show-password placeholder="??6?" />
+            </el-form-item>
+            <p v-if="pwError" class="settings-error">{{ pwError }}</p>
+            <p v-if="pwSuccess" class="settings-success">{{ pwSuccess }}</p>
+            <el-button type="primary" class="settings-submit" @click="doChangePassword" :loading="pwLoading">????</el-button>
+          </el-form>
+        </el-tab-pane>
+        <el-tab-pane label="????" name="name">
+          <el-form label-position="top" class="settings-form">
+            <el-form-item label="????">
+              <el-input class="settings-input" v-model="nameForm.playerName" placeholder="?????" />
+            </el-form-item>
+            <p v-if="nameError" class="settings-error">{{ nameError }}</p>
+            <p v-if="nameSuccess" class="settings-success">{{ nameSuccess }}</p>
+            <el-button type="primary" class="settings-submit" @click="doChangeName" :loading="nameLoading">????</el-button>
+          </el-form>
+        </el-tab-pane>
+        <el-tab-pane label="????" name="reset">
+          <div class="settings-form">
+            <p style="color: #ccc; margin-bottom: 16px;">????????????????????????????</p>
+            <p v-if="resetError" class="settings-error">{{ resetError }}</p>
+            <p v-if="resetSuccess" class="settings-success">{{ resetSuccess }}</p>
+            <el-button type="danger" class="settings-submit" @click="doResetGame" :loading="resetLoading">????</el-button>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
+      <template #footer>
+        <el-button type="danger" plain @click="doLogout" style="float:left">????</el-button>
+        <el-button @click="settingsVisible = false">??</el-button>
+      </template>
+    </el-dialog>
+
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { Setting } from '@element-plus/icons-vue'
 const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/game/websocket'
 
 const player = reactive<any>({
@@ -147,6 +198,21 @@ const selectedItemInRoom = ref(false)
 const attackDialogVisible = ref(false)
 const attackTarget = ref<any>(null)
 const attackTargetName = ref('')
+// Settings
+const settingsVisible = ref(false)
+const settingsTab = ref('password')
+const pwForm = reactive({ oldPassword: '', newPassword: '' })
+const nameForm = reactive({ playerName: '' })
+const pwError = ref('')
+const pwSuccess = ref('')
+const nameError = ref('')
+const nameSuccess = ref('')
+const resetError = ref('')
+const resetSuccess = ref('')
+const pwLoading = ref(false)
+const nameLoading = ref(false)
+const resetLoading = ref(false)
+
 
 const hpPercent = computed(() => {
   if (!player.maxHealth) return 100
@@ -264,6 +330,80 @@ function doAttack() {
     sendCommand('attack ' + attackTarget.value.playerName)
   }
   attackDialogVisible.value = false
+}
+
+async function doChangePassword() {
+  pwError.value = ''; pwSuccess.value = ''
+  if (!pwForm.oldPassword) { pwError.value = '??????'; return }
+  if (pwForm.newPassword.length < 6) { pwError.value = '???????6?'; return }
+  pwLoading.value = true
+  try {
+    const token = sessionStorage.getItem('token')
+    const res = await fetch('/api/user/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ oldPassword: pwForm.oldPassword, newPassword: pwForm.newPassword })
+    })
+    const data = await res.json()
+    if (data.success) {
+      pwSuccess.value = '??????'
+      pwForm.oldPassword = ''; pwForm.newPassword = ''
+    } else {
+      pwError.value = data.message || '????'
+    }
+  } catch { pwError.value = '????' }
+  finally { pwLoading.value = false }
+}
+
+async function doChangeName() {
+  nameError.value = ''; nameSuccess.value = ''
+  if (!nameForm.playerName.trim()) { nameError.value = '??????'; return }
+  nameLoading.value = true
+  try {
+    const token = sessionStorage.getItem('token')
+    const res = await fetch('/api/user/change-name', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ playerName: nameForm.playerName.trim() })
+    })
+    const data = await res.json()
+    if (data.success) {
+      nameSuccess.value = '??????'
+      player.playerName = nameForm.playerName.trim()
+      nameForm.playerName = ''
+    } else {
+      nameError.value = data.message || '????'
+    }
+  } catch { nameError.value = '????' }
+  finally { nameLoading.value = false }
+}
+
+async function doResetGame() {
+  resetError.value = ''; resetSuccess.value = ''
+  resetLoading.value = true
+  try {
+    const token = sessionStorage.getItem('token')
+    const res = await fetch('/api/user/reset-game', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token }
+    })
+    const data = await res.json()
+    if (data.success) {
+      resetSuccess.value = '?????'
+      messages.value = []
+    } else {
+      resetError.value = data.message || '????'
+    }
+  } catch { resetError.value = '????' }
+  finally { resetLoading.value = false }
+}
+
+function doLogout() {
+  stopHeartbeat()
+  if (ws) { ws.onclose = null; ws.close() }
+  sessionStorage.removeItem('token')
+  sessionStorage.removeItem('userId')
+  window.location.href = '/'
 }
 
 onMounted(() => {
@@ -542,4 +682,83 @@ onUnmounted(() => {
 .item-dialog :deep(.el-dialog__body) {
   padding: 20px;
 }
+/* Settings Bar */
+.settings-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 8px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.settings-welcome {
+  color: #f0d9a0;
+  font-size: 14px;
+  margin-right: auto;
+}
+.settings-btn {
+  --el-button-bg-color: rgba(255,255,255,0.05);
+  --el-button-border-color: rgba(255,255,255,0.1);
+  --el-button-text-color: #ccc;
+  --el-button-hover-bg-color: rgba(255,255,255,0.1);
+  --el-button-hover-text-color: #fff;
+}
+
+/* Settings Dialog - Dark Fantasy Theme */
+.settings-dialog :deep(.el-dialog) {
+  background: rgba(20, 20, 30, 0.98);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  backdrop-filter: blur(12px);
+}
+.settings-dialog :deep(.el-dialog__headerbtn .el-dialog__close) {
+  color: #888;
+}
+.settings-dialog :deep(.el-dialog__headerbtn:hover .el-dialog__close) {
+  color: #f0d9a0;
+}
+.settings-dialog :deep(.el-dialog__footer) {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding-top: 16px;
+}
+.settings-dialog :deep(.el-tabs__header) {
+  margin-bottom: 8px;
+}
+.settings-dialog :deep(.el-tabs__nav-wrap::after) {
+  background-color: rgba(255,255,255,0.06);
+  height: 1px;
+}
+.settings-dialog :deep(.el-tabs__item) {
+  color: #666;
+  font-size: 14px;
+  height: 36px;
+  line-height: 36px;
+}
+.settings-dialog :deep(.el-tabs__item.is-active) { color: #f0d9a0; }
+.settings-dialog :deep(.el-tabs__item:hover) { color: #aaa; }
+.settings-dialog :deep(.el-tabs__active-bar) { background-color: #f0d9a0; }
+
+.settings-form { padding: 8px 0; }
+.settings-form :deep(.el-form-item__label) { color: #aaa; font-size: 13px; padding-bottom: 4px; }
+
+.settings-input {
+  --el-input-bg-color: rgba(255,255,255,0.05);
+  --el-input-border-color: rgba(255,255,255,0.12);
+  --el-input-text-color: #e0e0e0;
+  --el-input-placeholder-color: rgba(255,255,255,0.3);
+  --el-input-hover-border-color: #f0d9a0;
+  --el-input-focus-border-color: #f0d9a0;
+}
+.settings-input :deep(.el-input__wrapper) { box-shadow: 0 0 0 1px rgba(255,255,255,0.1) inset; }
+.settings-input :deep(.el-input__inner) { color: #e0e0e0; }
+
+.settings-error { color: #f56c6c; font-size: 13px; margin-bottom: 8px; }
+.settings-success { color: #67c23a; font-size: 13px; margin-bottom: 8px; }
+.settings-submit {
+  width: 100%; margin-top: 8px;
+  --el-button-bg-color: #c4a35a; --el-button-border-color: #c4a35a;
+  --el-button-hover-bg-color: #d4b36a; --el-button-hover-border-color: #d4b36a;
+}
+
 </style>

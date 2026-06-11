@@ -12,6 +12,7 @@ public class MagicCookie extends AbstractItem {
 
     public MagicCookie() {
         super("MagicCookie", "魔法饼干", "神奇的饼干，增加负重上限 (+20)", 1);
+        setConsumable(true);
     }
 
     @Override

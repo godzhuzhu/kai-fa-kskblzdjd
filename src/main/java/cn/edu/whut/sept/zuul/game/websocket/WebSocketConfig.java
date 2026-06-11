@@ -4,6 +4,7 @@ import cn.edu.whut.sept.zuul.Game;
 import cn.edu.whut.sept.zuul.game.message.GameMessageBridge;
 import cn.edu.whut.sept.zuul.game.user.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -27,6 +28,9 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Autowired(required = false)
     private RedisPubSubService redisPubSubService;
 
+    @Value("${gm.secret:gm123}")
+    private String gmSecret;
+
     public WebSocketConfig(Game game, JwtUtil jwtUtil, GameMessageBridge messageBridge) {
         this.game = game;
         this.jwtUtil = jwtUtil;
@@ -42,7 +46,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Bean
     public GameWebSocketHandler gameWebSocketHandler() {
         GameWebSocketHandler handler = new GameWebSocketHandler(game, jwtUtil, messageBridge,
-                redisSessionManager, redisPubSubService);
+                redisSessionManager, redisPubSubService, gmSecret);
         game.setWebSocketHandler(handler);
         if (redisPubSubService != null) {
             redisPubSubService.setHandler(handler);

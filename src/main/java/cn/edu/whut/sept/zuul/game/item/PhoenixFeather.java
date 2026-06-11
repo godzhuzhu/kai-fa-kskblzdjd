@@ -12,6 +12,7 @@ public class PhoenixFeather extends AbstractItem implements IPlayerListener {
 
     public PhoenixFeather() {
         super("PhoenixFeather", "凤凰羽毛", "燃烧的羽毛 (死亡时复活，恢复50%生命)", 2);
+        setPassiveEffect(true);
     }
 
     @Override

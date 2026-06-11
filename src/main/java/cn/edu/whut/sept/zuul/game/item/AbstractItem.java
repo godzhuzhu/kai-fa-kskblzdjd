@@ -23,9 +23,11 @@ public abstract class AbstractItem {
     private final int weight;
 
     // 攻击属性
-    private int attackRange = 0;       // 0=非武器, 1=近战, 2+=远程
-    private int attackCooldown = 0;    // 冷却毫秒
-    private String attackType = "none"; // "melee","ranged","aoe","none"
+    private int attackRange = 0;
+    private int attackCooldown = 0;
+    private String attackType = "none";
+    private boolean passiveEffect = false;
+    private boolean consumable = false;
 
     public AbstractItem(String name, String displayName, String description, int weight) {
         this.name = name;
@@ -46,6 +48,10 @@ public abstract class AbstractItem {
     public String getAttackType() { return attackType; }
     public void setAttackType(String t) { this.attackType = t; }
     public boolean isWeapon() { return attackRange > 0; }
+    public boolean isPassiveEffect() { return passiveEffect; }
+    public void setPassiveEffect(boolean p) { this.passiveEffect = p; }
+    public boolean isConsumable() { return consumable; }
+    public void setConsumable(boolean c) { this.consumable = c; }
 
     /**
      * 被玩家拾取时的效果回调。

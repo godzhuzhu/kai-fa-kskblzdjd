@@ -6,6 +6,7 @@ public class BloodVial extends AbstractItem {
 
     public BloodVial() {
         super("BloodVial", "血瓶", "恢复生命的红色药水 (+40 生命)", 2);
+        setConsumable(true);
     }
 
     @Override

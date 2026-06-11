@@ -1,8 +1,19 @@
 spring:
-  profiles:
-    active: ${SPRING_PROFILES_ACTIVE:dev}
   application:
     name: zuul-server
+  datasource:
+    url: jdbc:h2:file:C:/Users/AA/Desktop/GAME/v1.0-begin/data/zuuldb;DB_CLOSE_DELAY=-1
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+  jpa:
+    generate-ddl: true
+    hibernate:
+      ddl-auto: update
+    show-sql: true
 
 server:
   port: 8080
@@ -11,42 +22,5 @@ jwt:
   secret: ${JWT_SECRET:WorldOfZuulSecretKeyForJWTToken2026}
   expiration: ${JWT_EXPIRATION:86400000}
 
----
-spring:
-  config:
-    activate:
-      on-profile: dev
-  datasource:
-    url: jdbc:h2:file:./data/zuuldb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password:
-  h2:
-    console:
-      enabled: true
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: false
-
----
-spring:
-  config:
-    activate:
-      on-profile: prod
-  datasource:
-    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/zuul?useSSL=true&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: ${MYSQL_USER:zuul}
-    password: ${MYSQL_PASSWORD:zuul123}
-  h2:
-    console:
-      enabled: false
-  jpa:
-    hibernate:
-      ddl-auto: update
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+gm:
+  secret: '${GM_SECRET:gm123}'

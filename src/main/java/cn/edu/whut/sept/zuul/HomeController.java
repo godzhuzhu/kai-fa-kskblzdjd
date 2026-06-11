@@ -18,7 +18,7 @@ public class HomeController {
 
     @GetMapping("/")
     public String home() {
-        return "World of Zuul Server is running!";
+        return "World of Zuul 服务器运行中";
     }
 
     @GetMapping("/health")

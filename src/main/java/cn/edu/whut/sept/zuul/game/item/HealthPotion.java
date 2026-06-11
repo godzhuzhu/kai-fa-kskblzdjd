@@ -6,6 +6,7 @@ public class HealthPotion extends AbstractItem {
 
     public HealthPotion() {
         super("HealthPotion", "大血瓶", "散发光芒的红色药剂 (+50 生命)", 3);
+        setConsumable(true);
     }
 
     @Override

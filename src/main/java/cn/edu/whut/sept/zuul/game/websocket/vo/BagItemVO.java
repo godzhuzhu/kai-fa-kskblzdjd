@@ -5,19 +5,21 @@ public class BagItemVO {
     private int weight;
     private int range;
     private String type;
+    private boolean consumable;
 
     public BagItemVO() {
     }
 
-    public BagItemVO(String name, int weight, int range, String type) {
+    public BagItemVO(String name, int weight, int range, String type, boolean consumable) {
         this.name = name;
         this.weight = weight;
         this.range = range;
         this.type = type;
+        this.consumable = consumable;
     }
 
     public BagItemVO(String name, int weight) {
-        this(name, weight, 0, "none");
+        this(name, weight, 0, "none", false);
     }
 
     public String getName() { return name; }
@@ -28,4 +30,6 @@ public class BagItemVO {
     public void setRange(int range) { this.range = range; }
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
+    public boolean isConsumable() { return consumable; }
+    public void setConsumable(boolean c) { this.consumable = c; }
 }

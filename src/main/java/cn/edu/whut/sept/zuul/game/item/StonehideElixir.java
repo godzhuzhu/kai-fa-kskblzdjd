@@ -6,6 +6,7 @@ public class StonehideElixir extends AbstractItem {
 
     public StonehideElixir() {
         super("StonehideElixir", "石肤药剂", "使皮肤坚如磐石的药水 (+15 防御)", 3);
+        setConsumable(true);
     }
 
     @Override

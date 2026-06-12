@@ -541,8 +541,6 @@ onUnmounted(()=>{
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
-
 .game-root{width:100vw;height:100vh;background:#030308;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;font-family:'VT323',monospace;image-rendering:pixelated;}
 
 .loading{display:flex;flex-direction:column;align-items:center;gap:12px;z-index:100;}

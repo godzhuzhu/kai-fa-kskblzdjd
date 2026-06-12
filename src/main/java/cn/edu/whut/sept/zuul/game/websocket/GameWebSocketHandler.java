@@ -342,7 +342,10 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         int cooldown = weapon != null ? weapon.getAttackCooldown() : 500;
         String atkType = weapon != null ? weapon.getAttackType() : "melee";
 
-        if (now - attacker.getLastAttackTime() < cooldown) return;
+        if (now - attacker.getLastAttackTime() < cooldown) {
+            messagePush(attacker, "攻击冷却中，请稍后再试");
+            return;
+        }
         attacker.setLastAttackTime(now);
 
         int totalDamage = attacker.getAttack();
@@ -358,8 +361,8 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 if (hitPlayer(attacker, room, tx, ty, totalDamage)) break;
             }
         } else if ("aoe".equals(atkType)) {
-            for (int ox = -1; ox <= 1; ox++)
-                for (int oy = -1; oy <= 1; oy++) {
+            for (int ox = -maxRange; ox <= maxRange; ox++)
+                for (int oy = -maxRange; oy <= maxRange; oy++) {
                     if (ox == 0 && oy == 0) continue;
                     hitPlayer(attacker, room, attacker.getPosX() + ox, attacker.getPosY() + oy, totalDamage / 2);
                 }

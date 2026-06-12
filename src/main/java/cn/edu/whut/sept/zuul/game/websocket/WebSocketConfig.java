@@ -61,6 +61,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     @Scheduled(fixedRate = 600000)
     public void roundReset() {
+        game.newRound();
         game.resetAllPlayers();
         game.rerollAllItems();
         game.getWebSocketHandler().broadcastRoundReset();

@@ -29,6 +29,8 @@ public class Game {
     private Map<Integer, Player> playerMap;
     private Room startingRoom;
     private GameWebSocketHandler webSocketHandler;
+    private long roundStartTime;
+    public static final int ROUND_DURATION_SECONDS = 600;
 
     @Autowired
     private StoreManager storeManager;
@@ -44,6 +46,17 @@ public class Game {
         playerMap = new ConcurrentHashMap<>();
         createRooms();
         parser = new Parser(storeManager);
+        roundStartTime = System.currentTimeMillis();
+    }
+
+    public void newRound() {
+        roundStartTime = System.currentTimeMillis();
+    }
+
+    public int getRoundRemainingSeconds() {
+        long elapsed = System.currentTimeMillis() - roundStartTime;
+        long remaining = ROUND_DURATION_SECONDS - elapsed / 1000;
+        return (int) Math.max(0, remaining);
     }
 
     private void createRooms() {

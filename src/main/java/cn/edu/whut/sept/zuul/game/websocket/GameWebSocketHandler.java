@@ -97,6 +97,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
         sendToSession(session, new WebSocketOutgoingPayload("playerPush", PlayerVO.from(player)));
         roomPush(player.getCurrentRoom());
+        sendToSession(session, new WebSocketOutgoingPayload("roundTime", String.valueOf(game.getRoundRemainingSeconds())));
     }
 
     @Override
@@ -637,7 +638,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         for (Player p : game.getAllPlayers().values()) {
             if (p.isOnline()) playerPush(p);
         }
-        broadcastLocal(new WebSocketOutgoingPayload("roundReset", ""));
+        broadcastLocal(new WebSocketOutgoingPayload("roundReset", String.valueOf(game.getRoundRemainingSeconds())));
     }
 
     public void broadcastRankings() {

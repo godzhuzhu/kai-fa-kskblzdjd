@@ -205,7 +205,15 @@ const gmItem=ref('')
 const rankings=ref<any[]>([])
 const hpPct=computed(()=>Math.max(0,(player.currentHealth/(player.maxHealth||100))*100))
 const roundTime=ref(600)
-const roundDisplay=computed(()=>{const m=Math.floor(roundTime.value/60),s=roundTime.value%60;return `${m}:${s.toString().padStart(2,'0')}`})
+const serverRoundEnd=ref(0)
+const tick=ref(0)
+const roundDisplay=computed(()=>{
+  void tick.value
+  if (serverRoundEnd.value > 0) {
+    roundTime.value = Math.max(0, Math.ceil((serverRoundEnd.value - Date.now()) / 1000))
+  }
+  const m=Math.floor(roundTime.value/60),s=roundTime.value%60;return `${m}:${s.toString().padStart(2,'0')}`
+})
 
 const RARITY:Record<string,number>={Sword:1,BloodVial:1,HealthPotion:1,MagicCookie:1,StonehideElixir:2,DragonscaleBulwark:2,SpeedBoots:2,StormCleaver:3,FrostBow:3,WarHammer:3,VampireFang:4,BloodDagger:4,ThornArmor:4,BerserkerTotem:5,ShadowbaneBallista:5,ImmortalCore:6,PhoenixFeather:6}
 const RCOLOR:Record<number,string>={1:'#aaa',2:'#4fc3f7',3:'#a4e',4:'#ff8c00',5:'#f66',6:'#ff0'}
@@ -464,14 +472,13 @@ function connect(){
   ws.onopen=()=>{
     connected.value=true
     reconAttempts=0
-    roundTime.value=600
     if(hbTimer) clearInterval(hbTimer)
     hbTimer=setInterval(()=>{
       if(ws?.readyState===WebSocket.OPEN)
         ws.send(JSON.stringify({action:'heartbeat',data:null,token:sessionStorage.getItem('token')}))
     },30000)
     if(roundTimer) clearInterval(roundTimer)
-    roundTimer=setInterval(()=>{if(roundTime.value>0)roundTime.value--},1000)
+    roundTimer=setInterval(()=>{tick.value++},1000)
   }
   ws.onmessage=(e)=>{
     try{
@@ -501,8 +508,10 @@ function connect(){
       }else if(p.type==='gmAuth'){
         if(p.data==='ok'){gmAuthed.value=true;gmError.value='';gmInput.value=''}
         else{gmError.value='密钥错误';gmAuthed.value=false}
+      }else if(p.type==='roundTime'){
+        serverRoundEnd.value=Date.now()+parseInt(p.data)*1000
       }else if(p.type==='roundReset'){
-        roundTime.value=600
+        serverRoundEnd.value=Date.now()+parseInt(p.data||'600')*1000
         pushMsg('新的一轮开始！所有玩家已重置','kill')
       }else if(p.type==='rankings'){
         try{rankings.value=JSON.parse(p.data)}catch(e){}

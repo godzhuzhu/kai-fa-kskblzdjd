@@ -41,6 +41,7 @@
             <div v-for="(tile,x) in row" :key="x" class="mm-cell" :class="{
               wall:tile===1, floor:tile!=1, door:tile>=2&&tile<=5,
               player:tile!=1&&x===player.posX&&y===player.posY,
+              otherPlayer:hasOtherPlayerAt(x,y),
               itemDot:hasItemAt(x,y)
             }"></div>
           </div>
@@ -274,6 +275,10 @@ function pushMsg(txt:string,cls=''){
 function hasItemAt(x:number,y:number){
   if(!room.items) return false
   return room.items.some((it:any)=>it.x===x&&it.y===y)
+}
+function hasOtherPlayerAt(x:number,y:number){
+  if(!room.players) return false
+  return room.players.some((p:any)=>p.userId!==player.userId&&p.posX===x&&p.posY===y)
 }
 
 let ws:WebSocket|null=null,ctx:CanvasRenderingContext2D|null=null
@@ -628,6 +633,7 @@ onUnmounted(()=>{
 .mm-cell.floor{background:#141420;}
 .mm-cell.door{background:#2a5a2a;}
 .mm-cell.player{background:#4caf50;box-shadow:0 0 4px #4caf50;}
+.mm-cell.otherPlayer{background:#ff7043;box-shadow:0 0 3px #ff7043;}
 .mm-cell.itemDot{background:#ffd700;box-shadow:0 0 2px #ffd700;}
 .room-label{color:#c0a060;font-size:12px;text-shadow:0 0 8px rgba(192,160,96,.3);letter-spacing:1px;}
 .player-count{color:#666;font-size:10px;letter-spacing:1px;}

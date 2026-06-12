@@ -342,10 +342,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         int cooldown = weapon != null ? weapon.getAttackCooldown() : 500;
         String atkType = weapon != null ? weapon.getAttackType() : "melee";
 
-        if (now - attacker.getLastAttackTime() < cooldown) {
-            messagePush(attacker, "攻击冷却中，请稍后再试");
-            return;
-        }
+        if (now - attacker.getLastAttackTime() < cooldown) return;
         attacker.setLastAttackTime(now);
 
         int totalDamage = attacker.getAttack();

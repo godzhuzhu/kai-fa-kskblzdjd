@@ -413,7 +413,7 @@ function render(){
       }
     }
   }
-  if(keys['j']&&ws&&ws.readyState===WebSocket.OPEN&&n-lastAtk>500){
+  if(keys['j']&&ws&&ws.readyState===WebSocket.OPEN&&n-lastAtk>1200){
     const at=player.equippedWeapon?.attackType||'melee'
     const rng=player.equippedWeapon?.range||1
     ws.send(JSON.stringify({action:'attack',data:JSON.stringify({dx:ldx,dy:ldy}),token:sessionStorage.getItem('token')}))

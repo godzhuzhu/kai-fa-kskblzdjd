@@ -12,6 +12,7 @@ public class ImmortalCore extends AbstractItem implements IPlayerListener {
 
     public ImmortalCore() {
         super("ImmortalCore", "不朽核心", "神秘的能量核心 (免疫一次死亡，保留1HP)", 2);
+        setPassiveEffect(true);
     }
 
     @Override

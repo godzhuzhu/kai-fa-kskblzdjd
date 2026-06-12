@@ -8,6 +8,7 @@ import cn.edu.whut.sept.zuul.game.Direction;
 import cn.edu.whut.sept.zuul.game.Player;
 import cn.edu.whut.sept.zuul.game.Room;
 import cn.edu.whut.sept.zuul.game.item.AbstractItem;
+import cn.edu.whut.sept.zuul.game.item.Items;
 import cn.edu.whut.sept.zuul.game.message.GameMessageBridge;
 import cn.edu.whut.sept.zuul.game.user.security.JwtUtil;
 import cn.edu.whut.sept.zuul.game.websocket.vo.PlayerVO;
@@ -21,6 +22,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,14 +42,19 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     private final RedisSessionManager redisSessionManager;
     private final RedisPubSubService redisPubSubService;
 
+    private final String gmSecret;
+    private final Map<String, Boolean> gmSessions = new HashMap<>();
+
     public GameWebSocketHandler(Game game, JwtUtil jwtUtil, GameMessageBridge messageBridge,
-                                RedisSessionManager redisSessionManager, RedisPubSubService redisPubSubService) {
+                                RedisSessionManager redisSessionManager, RedisPubSubService redisPubSubService,
+                                String gmSecret) {
         this.game = game;
         this.jwtUtil = jwtUtil;
         this.messageBridge = messageBridge;
         this.objectMapper = new ObjectMapper();
         this.redisSessionManager = redisSessionManager;
         this.redisPubSubService = redisPubSubService;
+        this.gmSecret = gmSecret;
     }
 
     @Override
@@ -171,6 +178,18 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             gameSession.getPlayer().unequipArmor();
             playerPush(gameSession.getPlayer());
         }
+
+        if ("gm_auth".equals(action)) {
+            handleGmAuth(gameSession, payload.getData());
+        }
+
+        if ("gm_spawn".equals(action)) {
+            handleGmSpawn(gameSession, payload.getData());
+        }
+
+        if ("gm_heal".equals(action)) {
+            handleGmHeal(gameSession);
+        }
     }
 
     private void handleEquip(Player player, String itemName) {
@@ -179,10 +198,10 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             if (item.getName().equals(itemName)) {
                 if (item.isWeapon()) {
                     player.equipWeapon(item);
-                    messagePush(player, "装备了 " + itemName + "。");
+                    messagePush(player, "装备了 " + item.getDisplayName() + "。");
                 } else {
                     player.equipArmor(item);
-                    messagePush(player, "装备了 " + itemName + " 防具。");
+                    messagePush(player, "装备了 " + item.getDisplayName() + " 防具。");
                 }
                 playerPush(player);
                 return;
@@ -250,9 +269,15 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
 
     private void handleInteract(Player player) {
         Room currentRoom = player.getCurrentRoom();
-        AbstractItem item = currentRoom.takeItemAt(player.getPosX(), player.getPosY());
-        if (item != null && player.takeItem(item)) {
-            messagePush(player, "你拾取了 " + item.getName() + "。");
+        int px = player.getPosX(), py = player.getPosY();
+        AbstractItem item = currentRoom.takeItemAt(px, py);
+        if (item != null) {
+            if (!player.canCarry(item)) {
+                currentRoom.placeItem(item, px, py);
+                messagePush(player, "背包已满，无法拾取！");
+            } else if (player.takeItem(item)) {
+                messagePush(player, "你拾取了 " + item.getDisplayName() + "。");
+            }
         }
         playerPush(player);
         roomPush(player.getCurrentRoom());
@@ -262,21 +287,23 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         if (itemName == null) return;
         for (AbstractItem item : player.getBag()) {
             if (item.getName().equals(itemName)) {
-                player.dropItem(item);
+                boolean dropped = player.dropItem(item);
                 Room room = player.getCurrentRoom();
                 int x = player.getPosX(), y = player.getPosY();
                 int[][] dirs = {{0,1},{0,-1},{1,0},{-1,0}};
                 boolean placed = false;
                 for (int[] d : dirs) {
                     int nx = x + d[0], ny = y + d[1];
-                    if (room.isWalkable(nx, ny)) {
+                    if (room.isPlaceable(nx, ny)) {
                         room.placeItem(item, nx, ny);
                         placed = true;
                         break;
                     }
                 }
                 if (!placed) room.placeItem(item, x, y);
-                messagePush(player, "你丢掉了 " + itemName + "。");
+                if (dropped) {
+                    messagePush(player, "你丢掉了 " + item.getDisplayName() + "。");
+                }
                 break;
             }
         }
@@ -289,11 +316,11 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         for (AbstractItem item : player.getBag()) {
             if (item.getName().equals(itemName)) {
                 if (item.isWeapon()) {
-                    messagePush(player, itemName + " 是武器，请拾取后装备。");
+                    messagePush(player, item.getDisplayName() + " 是武器，请拾取后装备。");
                     return;
                 }
                 player.useItem(item);
-                messagePush(player, "使用了 " + itemName + "。");
+                messagePush(player, "使用了 " + item.getDisplayName() + "。");
                 break;
             }
         }
@@ -331,13 +358,13 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 if (hitPlayer(attacker, room, tx, ty, totalDamage)) break;
             }
         } else if ("aoe".equals(atkType)) {
-            for (int ox = -1; ox <= 1; ox++)
-                for (int oy = -1; oy <= 1; oy++) {
+            for (int ox = -maxRange; ox <= maxRange; ox++)
+                for (int oy = -maxRange; oy <= maxRange; oy++) {
                     if (ox == 0 && oy == 0) continue;
                     hitPlayer(attacker, room, attacker.getPosX() + ox, attacker.getPosY() + oy, totalDamage / 2);
                 }
         }
-        String atkBC = "ATK:" + attacker.getPosX() + "," + attacker.getPosY() + "," + dx + "," + dy + "," + atkType;
+        String atkBC = "ATK:" + attacker.getPosX() + "," + attacker.getPosY() + "," + dx + "," + dy + "," + atkType + "," + maxRange;
         broadcastToRoom(room, atkBC);
     }
 
@@ -368,15 +395,13 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 boolean attackerDead = attacker.isDead();
 
                 if (victimDead) {
-                    handlePlayerDeath(p, room);
-                    roomPush(room);
-                    Room spawnRoomP = game.getStartingRoom();
-                    roomPush(spawnRoomP);
                     DeathEvent deathEvent = new DeathEvent(attacker, p);
                     p.notifyDeath(deathEvent);
                     if (!p.isDead()) {
-                        p.setCurrentHealth(p.getCurrentHealth());
+                        playerPush(p);
+                        roomPush(room);
                     } else {
+                        handlePlayerDeath(p, room);
                         respawnDeadPlayer(p);
                     }
                     FightWinEvent winEvent = new FightWinEvent(attacker, p);
@@ -386,7 +411,6 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     attacker.setAttack(attacker.getAttack() + 2);
                     messagePush(attacker, "你击败了 " + p.getPlayerName() + "！+2攻击 +10生命");
                     playerPush(attacker);
-                    playerPush(p);
                 } else {
                     playerPush(attacker);
                     playerPush(p);
@@ -394,15 +418,13 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 }
 
                 if (attackerDead) {
-                    handlePlayerDeath(attacker, room);
-                    roomPush(room);
-                    Room spawnRoomA = game.getStartingRoom();
-                    roomPush(spawnRoomA);
                     DeathEvent deathEventA = new DeathEvent(p, attacker);
                     attacker.notifyDeath(deathEventA);
                     if (!attacker.isDead()) {
-                        attacker.setCurrentHealth(attacker.getCurrentHealth());
+                        playerPush(attacker);
+                        roomPush(room);
                     } else {
+                        handlePlayerDeath(attacker, room);
                         respawnDeadPlayer(attacker);
                     }
                     FightWinEvent winEventA = new FightWinEvent(p, attacker);
@@ -411,7 +433,6 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                     p.setCurrentHealth(Math.min(p.getCurrentHealth() + 10, p.getMaxHealth()));
                     p.setAttack(p.getAttack() + 2);
                     messagePush(p, "你击败了 " + attacker.getPlayerName() + "！+2攻击 +10生命");
-                    playerPush(attacker);
                     playerPush(p);
                 }
 
@@ -421,26 +442,99 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         return false;
     }
 
-    private void handlePlayerDeath(Player dead, Room room) {
-        if (dead.getEquippedWeapon() != null) dead.unequipWeapon();
-        if (dead.getEquippedArmor() != null) dead.unequipArmor();
-        for (AbstractItem item : new ArrayList<>(dead.getBag())) {
-            dead.dropItem(item);
-            room.placeItem(item, dead.getPosX(), dead.getPosY());
+    private void handleGmAuth(GameSession gs, String secret) {
+        boolean ok = gmSecret.equals(secret);
+        if (ok) {
+            gmSessions.put(gs.getWebSocketSession().getId(), true);
+        }
+        sendToSession(gs.getWebSocketSession(),
+            new WebSocketOutgoingPayload("gmAuth", ok ? "ok" : "denied"));
+    }
+
+    private void handleGmSpawn(GameSession gs, String data) {
+        if (!isGm(gs)) return;
+        com.fasterxml.jackson.databind.JsonNode n;
+        try {
+            n = objectMapper.readTree(data);
+        } catch (Exception e) {
+            messagePush(gs.getPlayer(), "[GM] 数据解析失败: " + e.getMessage());
+            return;
+        }
+        String itemName = n.get("itemName").asText();
+        String target = n.has("target") ? n.get("target").asText() : "self";
+        AbstractItem item = Items.createItem(itemName);
+        if (item == null) {
+            messagePush(gs.getPlayer(), "[GM] 未知物品: " + itemName);
+            return;
+        }
+        Player player = gs.getPlayer();
+        if ("room".equals(target)) {
+            player.getCurrentRoom().addItem(item);
+            roomPush(player.getCurrentRoom());
+            playerPush(player);
+            messagePush(player, "[GM] 在房间生成了 " + itemName);
+        } else {
+            if (player.takeItem(item)) {
+                playerPush(player);
+                messagePush(player, "[GM] 获得了 " + itemName);
+            } else {
+                messagePush(player, "[GM] 背包已满");
+            }
         }
     }
 
-    private void respawnDeadPlayer(Player dead) {
+    private void handleGmHeal(GameSession gs) {
+        if (!isGm(gs)) return;
+        Player p = gs.getPlayer();
+        p.setCurrentHealth(p.getMaxHealth());
+        p.setAttack(Math.max(p.getAttack(), 10));
+        p.setDefense(Math.max(p.getDefense(), 5));
+        playerPush(p);
+        messagePush(p, "[GM] 生命已回满");
+    }
+
+    private boolean isGm(GameSession gs) {
+        return Boolean.TRUE.equals(gmSessions.get(gs.getWebSocketSession().getId()));
+    }
+
+        private void handlePlayerDeath(Player dead, Room room) {
+        if (dead.getEquippedWeapon() != null) dead.unequipWeapon();
+        if (dead.getEquippedArmor() != null) dead.unequipArmor();
+        int[][] offsets = {{0,0},{0,1},{0,-1},{1,0},{-1,0},{1,1},{1,-1},{-1,1},{-1,-1}};
+        int baseX = dead.getPosX(), baseY = dead.getPosY();
+        int idx = 0;
+        for (AbstractItem item : new ArrayList<>(dead.getBag())) {
+            dead.dropItem(item);
+            int tx = baseX, ty = baseY;
+            boolean placed = false;
+            for (int attempt = 0; attempt < offsets.length; attempt++) {
+                int ox = idx % offsets.length;
+                tx = baseX + offsets[ox][0];
+                ty = baseY + offsets[ox][1];
+                idx++;
+                if (room.isPlaceable(tx, ty)) {
+                    placed = true;
+                    break;
+                }
+            }
+            if (!placed) { tx = baseX; ty = baseY; }
+            room.placeItem(item, tx, ty);
+        }
+    }
+private void respawnDeadPlayer(Player dead) {
         dead.setCurrentHealth(dead.getMaxHealth());
         dead.setAttack(10);
         dead.setDefense(5);
-        Room oldRoom = dead.getCurrentRoom();
-        Room spawnRoom = game.getStartingRoom();
         dead.getPreviousRooms().clear();
+        Room oldRoom = dead.getCurrentRoom();
+        String oldRoomName = oldRoom.getName();
+        Room spawnRoom = game.getStartingRoom();
         dead.moveTo(spawnRoom);
         int[] sp = spawnRoom.getSpawnPoint();
         dead.setPosX(sp[0]);
         dead.setPosY(sp[1]);
+        onPlayerMoved(dead, oldRoomName);
+        playerPush(dead);
         roomPush(oldRoom);
         roomPush(spawnRoom);
     }
@@ -554,7 +648,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 GameSession session = playerSessions.get(id);
                 if (session != null && session.getWebSocketSession().isOpen()) {
                     Player p = session.getPlayer();
-                    if (p.isOnline() && p != exclude) {
+                    if (p.isOnline() && p.getCurrentRoom() == room && p != exclude) {
                         result.add(p);
                     }
                 } else if (session != null) {

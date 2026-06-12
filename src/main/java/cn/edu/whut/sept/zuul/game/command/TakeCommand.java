@@ -41,7 +41,7 @@ public class TakeCommand extends Command {
 
         room.removeItem(itemName);
         player.takeItem(item);
-        game.getMessageBridge().send(new SinglePlayerMessage("你拾取了 " + item.getName() + "。"), player);
+        game.getMessageBridge().send(new SinglePlayerMessage("你拾取了 " + item.getDisplayName() + "。"), player);
         return false;
     }
 }

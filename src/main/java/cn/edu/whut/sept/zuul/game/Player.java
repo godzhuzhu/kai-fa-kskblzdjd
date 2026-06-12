@@ -121,7 +121,9 @@ public class Player {
             return false;
         }
         bag.add(item);
-        item.takenBy(this);
+        if (item.isPassiveEffect()) {
+            item.takenBy(this);
+        }
         return true;
     }
 
@@ -129,7 +131,9 @@ public class Player {
         if (!bag.remove(item)) {
             return false;
         }
-        item.droppedBy(this);
+        if (item.isPassiveEffect()) {
+            item.droppedBy(this);
+        }
         return true;
     }
 
@@ -154,6 +158,7 @@ public class Player {
             if (equippedWeapon != null) unequipWeapon();
             bag.remove(item);
             equippedWeapon = item;
+            item.takenBy(this);
         }
         return true;
     }
@@ -161,6 +166,7 @@ public class Player {
     public void unequipWeapon() {
         if (equippedWeapon == null) return;
         synchronized (bag) {
+            equippedWeapon.droppedBy(this);
             bag.add(equippedWeapon);
             equippedWeapon = null;
         }
@@ -174,6 +180,7 @@ public class Player {
             if (equippedArmor != null) unequipArmor();
             bag.remove(item);
             equippedArmor = item;
+            item.takenBy(this);
         }
         return true;
     }
@@ -181,6 +188,7 @@ public class Player {
     public void unequipArmor() {
         if (equippedArmor == null) return;
         synchronized (bag) {
+            equippedArmor.droppedBy(this);
             bag.add(equippedArmor);
             equippedArmor = null;
         }

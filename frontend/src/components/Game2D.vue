@@ -27,8 +27,8 @@
         <div class="minimap" v-if="room.tiles">
           <div v-for="(row,y) in room.tiles" :key="y" class="mm-row">
             <div v-for="(tile,x) in row" :key="x" class="mm-cell" :class="{
-              wall:tile===1,floor:tile!==1,door:tile>=2&&tile<=5,
-              player:tile!==1&&x===player.posX&&y===player.posY,
+              wall:tile===1, floor:tile!=1, door:tile>=2&&tile<=5,
+              player:tile!=1&&x===player.posX&&y===player.posY,
               itemDot:hasItemAt(x,y)
             }"></div>
           </div>
@@ -45,14 +45,20 @@
         <div class="eq-slot" @click="unequip('w')" :class="{filled:player.equippedWeapon}">
           <span class="eq-icon">{{ player.equippedWeapon ? '⚔' : '▢' }}</span>
           <span class="eq-label">武器</span>
-          <span class="eq-name" v-if="player.equippedWeapon">{{ player.equippedWeapon.name }}</span>
+          <span class="eq-name" v-if="player.equippedWeapon">{{ player.equippedWeapon.displayName || player.equippedWeapon.name }}</span>
           <span class="eq-name dim" v-else>空</span>
         </div>
         <div class="eq-slot" @click="unequip('a')" :class="{filled:player.equippedArmor}">
           <span class="eq-icon">{{ player.equippedArmor ? '🛡' : '▢' }}</span>
           <span class="eq-label">防具</span>
-          <span class="eq-name" v-if="player.equippedArmor">{{ player.equippedArmor.name }}</span>
+          <span class="eq-name" v-if="player.equippedArmor">{{ player.equippedArmor.displayName || player.equippedArmor.name }}</span>
           <span class="eq-name dim" v-else>空</span>
+        </div>
+        <div class="eq-slot bag-btn gm-btn" @click="openGm()">
+          <span class="eq-icon">⚙</span>
+          <span class="eq-label">GM</span>
+          <span class="eq-name" v-if="gmAuthed">ON</span>
+          <span class="eq-name dim" v-else>OFF</span>
         </div>
         <div class="eq-slot bag-btn" @click="showBag=!showBag">
           <span class="eq-icon">🎒</span>
@@ -66,6 +72,7 @@
         <span class="key-hint">J</span> 攻击 ·
         <span class="key-hint">空格</span> 拾取 ·
         <span class="key-hint">I</span> 背包 ·
+        <span class="key-hint">H</span> 帮助 ·
         <span class="key-hint">F5</span> 存档
       </div>
 
@@ -86,16 +93,78 @@
           <div v-for="item in player.bag" :key="item.name" class="inv-row" :class="{isWpn:item.range>0,isArm:item.weight>=1&&!item.range}">
             <span class="inv-icon">{{ item.range>0?'⚔':item.weight>=1?'🛡':'♨' }}</span>
             <div class="inv-mid">
-              <div class="inv-name">{{ item.name }}</div>
+              <div class="inv-name">{{ item.displayName || item.name }}</div>
               <div class="inv-desc" v-html="itemDesc(item)"></div>
             </div>
             <div class="inv-btns">
               <button v-if="item.range>0" class="sk-btn green" @click="equip(item)">装备</button>
-              <button v-else-if="item.weight>=1" class="sk-btn blue" @click="equip(item)">穿戴</button>
+              <button v-else-if="!item.consumable" class="sk-btn blue" @click="equip(item)">穿戴</button>
               <button v-else class="sk-btn cyan" @click="useItem(item)">使用</button>
               <button class="sk-btn red" @click="dropItem(item)">丢弃</button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+    <!-- Help Panel -->
+    <div class="inv-bg" v-if="showHelp" @click.self="showHelp=false">
+      <div class="inv-box" style="min-width:600px;max-width:700px;max-height:80vh;">
+        <div class="inv-top">
+          <span class="inv-title">游戏帮助</span>
+          <span class="inv-close" @click="showHelp=false">✕</span>
+        </div>
+        <div style="display:flex;gap:12px;overflow:hidden;flex:1;">
+          <div style="overflow-y:auto;flex:1;">
+            <div style="color:#c0a060;font-size:13px;margin-bottom:8px;font-weight:700;">操作说明</div>
+            <div v-for="row in HELP_CONTROLS" :key="row.k" style="display:flex;gap:10px;padding:2px 0;font-size:12px;">
+              <span style="color:#ff8c00;min-width:70px;text-align:right;font-weight:700;">{{ row.k }}</span>
+              <span style="color:#ccc;">{{ row.v }}</span>
+            </div>
+            <div style="color:#c0a060;font-size:13px;margin:14px 0 8px;font-weight:700;">战斗机制</div>
+            <div style="font-size:11px;color:#aaa;line-height:1.6;">
+              <div>· <b style="color:#ef5350">反击伤害</b>：攻击敌人时，目标会反击 (目标攻击×25% - 你的防御)。AOE武器命中多个敌人时叠加。</div>
+              <div>· <b style="color:#64b5f6">荆棘铠甲</b>：被攻击时反弹30%伤害给攻击者。</div>
+              <div>· <b style="color:#4caf50">击杀奖励</b>：击败玩家 +2攻击 +10最大生命。</div>
+              <div>· <b>装备机制</b>：拾取物品放入背包 -> 按 I 打开背包 -> 装备/穿戴才生效。空手攻击只有10基础伤害。</div>
+            </div>
+          </div>
+          <div style="overflow-y:auto;flex:1;border-left:1px solid #222;padding-left:12px;">
+            <div style="color:#c0a060;font-size:13px;margin-bottom:8px;font-weight:700;">装备图鉴 (17件)</div>
+            <div v-for="it in HELP_ITEMS" :key="it.n" style="padding:4px 0;border-bottom:1px solid rgba(255,255,255,.03);">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:16px;">{{ it.n.startsWith('Wpn')?'⚔':it.n.startsWith('Arm')?'🛡':'♨' }}</span>
+                <span :style="{color:RCOLOR[it.r]||'#aaa',fontSize:'12px',fontWeight:'700'}">{{ it.name }}</span>
+                <span style="font-size:10px;color:#888;">{{ it.tag }}</span>
+              </div>
+              <div style="color:#888;font-size:11px;padding-left:22px;">{{ it.desc }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- GM Panel -->
+    <div class="inv-bg" v-if="showGm" @click.self="showGm=false">
+      <div class="inv-box" style="min-width:300px;max-width:360px;">
+        <div class="inv-top">
+          <span class="inv-title">⚙ Game Master</span>
+          <span class="inv-close" @click="showGm=false">✕</span>
+        </div>
+        <div v-if="!gmAuthed" style="padding:12px 0;">
+          <el-input v-model="gmInput" placeholder="输入GM密钥" show-password style="margin-bottom:10px;" @keyup.enter="doGmAuth" />
+          <el-button type="warning" size="small" style="width:100%;" @click="doGmAuth">验证</el-button>
+          <div v-if="gmError" style="color:#f66;font-size:12px;margin-top:8px;text-align:center;">{{ gmError }}</div>
+        </div>
+        <div v-else>
+          <div style="color:#c0a060;font-size:13px;margin-bottom:10px;">生成物品</div>
+          <select v-model="gmItem" style="width:100%;padding:6px;background:#111;color:#ccc;border:1px solid #333;border-radius:4px;margin-bottom:8px;">
+            <option v-for="it in HELP_ITEMS" :key="it.n" :value="it.in">{{ it.name }}</option>
+          </select>
+          <div style="display:flex;gap:6px;margin-bottom:12px;">
+            <button class="sk-btn green" style="flex:1;" @click="gmSpawn('self')">给我</button>
+            <button class="sk-btn cyan" style="flex:1;" @click="gmSpawn('room')">放房间</button>
+          </div>
+          <div style="color:#c0a060;font-size:13px;margin-bottom:8px;">快捷操作</div>
+          <button class="sk-btn green" style="width:100%;" @click="gmHeal()">满血</button>
         </div>
       </div>
     </div>
@@ -115,14 +184,63 @@ const msgLog=ref<{txt:string,cls:string,t:number}[]>([])
 const disconnected=ref(false)
 const connected=ref(false)
 const showBag=ref(false)
+const showHelp=ref(false)
+const showGm=ref(false)
+const gmAuthed=ref(false)
+const gmInput=ref('')
+const gmError=ref('')
+const gmItem=ref('')
 const hpPct=computed(()=>Math.max(0,(player.currentHealth/(player.maxHealth||100))*100))
 
 const RARITY:Record<string,number>={Sword:1,BloodVial:1,HealthPotion:1,MagicCookie:1,StonehideElixir:2,DragonscaleBulwark:2,SpeedBoots:2,StormCleaver:3,FrostBow:3,WarHammer:3,VampireFang:4,BloodDagger:4,ThornArmor:4,BerserkerTotem:5,ShadowbaneBallista:5,ImmortalCore:6,PhoenixFeather:6}
 const RCOLOR:Record<number,string>={1:'#aaa',2:'#4fc3f7',3:'#a4e',4:'#ff8c00',5:'#f66',6:'#ff0'}
+
+const HELP_CONTROLS=[
+  {k:'W A S D',v:'移动 / 换方向'},
+  {k:'J',v:'攻击当前面向目标'},
+  {k:'空格',v:'拾取脚下物品'},
+  {k:'I',v:'打开/关闭背包'},
+  {k:'H',v:'打开/关闭帮助'},
+  {k:'F5',v:'保存游戏'},
+  {k:'F9',v:'读取存档'},
+]
+
+const HELP_CMDS=[
+  {k:'go 方向',v:'移动到相邻房间'},
+  {k:'back',v:'返回上一个房间'},
+  {k:'look',v:'查看当前房间'},
+  {k:'take 物品',v:'拾取物品'},
+  {k:'drop 物品',v:'丢弃物品'},
+  {k:'use 物品',v:'使用消耗品'},
+  {k:'items',v:'查看背包'},
+  {k:'attack 玩家',v:'攻击其他玩家'},
+  {k:'save / load',v:'保存/读取存档'},
+]
+
+const HELP_ITEMS=[
+  {n:'Wpn_Sword',in:'Sword',name:'铁剑',tag:'近战',r:1,desc:'+10攻击, 500ms冷却, 距离1'},
+  {n:'Wpn_BloodDagger',in:'BloodDagger',name:'嗜血匕首',tag:'近战',r:4,desc:'击杀回复15HP, 400ms冷却'},
+  {n:'Wpn_VampireFang',in:'VampireFang',name:'吸血獠牙',tag:'近战',r:4,desc:'+8攻击, 攻击回复33%伤害, 600ms冷却'},
+  {n:'Wpn_WarHammer',in:'WarHammer',name:'战锤',tag:'范围',r:3,desc:'+20攻击, AOE范围伤害, 1200ms冷却'},
+  {n:'Wpn_StormCleaver',in:'StormCleaver',name:'风暴斩刃',tag:'远程',r:3,desc:'+15攻击, 距离2, 1000ms冷却'},
+  {n:'Wpn_FrostBow',in:'FrostBow',name:'寒冰弓',tag:'远程',r:3,desc:'+12攻击, 距离3, 1000ms冷却'},
+  {n:'Wpn_ShadowbaneBallista',in:'ShadowbaneBallista',name:'暗影弩炮',tag:'远程',r:5,desc:'距离3, 每次攻击额外+5伤害, 1500ms冷却'},
+  {n:'Arm_DragonscaleBulwark',in:'DragonscaleBulwark',name:'龙鳞壁垒',tag:'防具',r:2,desc:'+12防御'},
+  {n:'Arm_ThornArmor',in:'ThornArmor',name:'荆棘铠甲',tag:'防具',r:4,desc:'+10防御, 反射30%所受伤害'},
+  {n:'Arm_SpeedBoots',in:'SpeedBoots',name:'疾风靴',tag:'防具',r:2,desc:'+5攻击, +3防御'},
+  {n:'Use_BloodVial',in:'BloodVial',name:'血瓶',tag:'消耗',r:1,desc:'恢复40HP'},
+  {n:'Use_HealthPotion',in:'HealthPotion',name:'大血瓶',tag:'消耗',r:1,desc:'恢复50HP'},
+  {n:'Use_MagicCookie',in:'MagicCookie',name:'魔法饼干',tag:'消耗',r:1,desc:'永久+20负重上限'},
+  {n:'Use_StonehideElixir',in:'StonehideElixir',name:'石肤药剂',tag:'消耗',r:2,desc:'永久+15防御'},
+  {n:'Pas_BerserkerTotem',in:'BerserkerTotem',name:'狂战士图腾',tag:'被动',r:5,desc:'受伤后+8攻击持续12秒'},
+  {n:'Pas_ImmortalCore',in:'ImmortalCore',name:'不朽核心',tag:'被动',r:6,desc:'免疫一次死亡, 保留1HP'},
+  {n:'Pas_PhoenixFeather',in:'PhoenixFeather',name:'凤凰羽毛',tag:'被动',r:6,desc:'死亡时复活, 恢复50%HP'},
+]
 function itemDesc(it:any){
+  if (it.description) return it.description;
   const r=RARITY[it.name]||1
   const stars='★'.repeat(r)+'☆'.repeat(6-r)
-  const tp=it.range>0?it.type+' rng '+it.range:it.weight>=1?'armor':'consumable'
+  const tp=it.range>0?it.type+' rng '+it.range:it.consumable?'consumable':'armor'
   return `<span style="color:${RCOLOR[r]}">${stars}</span> ${tp} · ${it.weight}kg`
 }
 
@@ -139,7 +257,7 @@ let ws:WebSocket|null=null,ctx:CanvasRenderingContext2D|null=null
 let keys:Record<string,boolean>={},lastAtk=0,aid=0
 let ldx=1,ldy=0,srvX=1,srvY=1,clX=1,clY=1,subX=0,subY=0
 let hitFx:{x:number,y:number,t:number}[]=[]
-let atkFx:{x:number,y:number,dx:number,dy:number,tp:string,t:number}[]=[]
+let atkFx:{x:number,y:number,dx:number,dy:number,tp:string,rng:number,t:number}[]=[]
 let prevHp:Record<number,number>={}
 let dust:{x:number,y:number,s:number,a:number}[]=[]
 let rmtP:{[uid:number]:{cx:number,cy:number,tx:number,ty:number}}={}
@@ -159,7 +277,7 @@ function render(){
   c.fillStyle='#050510';c.fillRect(0,0,W*T,H*T)
   if(!room.tiles||room.tiles.length===0){
     c.fillStyle='#a09070';c.font='20px monospace'
-    c.textAlign='center';c.fillText('LOADING...',W*T/2,H*T/2)
+    c.textAlign='center';c.fillText('加载中...',W*T/2,H*T/2)
     aid=requestAnimationFrame(render);return
   }
   for(const d of dust){
@@ -197,7 +315,7 @@ function render(){
         c.beginPath();c.arc(px,py+bob,8,0,Math.PI*2);c.fill()
         c.fillStyle='#000';c.font='bold 10px monospace'
         c.textAlign='center';c.textBaseline='middle'
-        c.fillText(String(it.name||'?').substring(0,2),px,py+bob)
+        c.fillText(String(it.displayName||it.name||'?').substring(0,2),px,py+bob)
       }
     }
   }
@@ -227,9 +345,6 @@ function render(){
   c.strokeStyle='#81c784';c.lineWidth=2;c.beginPath();c.arc(ppx,ppy,14,0,Math.PI*2);c.stroke()
   c.shadowBlur=0
   c.fillStyle='#fff';c.font='bold 16px monospace';c.textAlign='center';c.textBaseline='middle';c.fillText('@',ppx,ppy)
-  c.fillStyle='#ff5252';c.font='18px monospace';c.textAlign='center';c.textBaseline='middle'
-  const ad:Record<string,string>={'-1:0':'◀','1:0':'▶','0:-1':'▲','0:1':'▼'}
-  c.fillText(ad[ldx+':'+ldy]||'▶',ppx+ldx*20,ppy+ldy*20)
   hitFx=hitFx.filter(h=>n-h.t<400)
   for(const h of hitFx){
     const a=1-(n-h.t)/400
@@ -245,8 +360,16 @@ function render(){
     }else if(a.tp==='ranged'){
       c.strokeStyle=`rgba(80,180,255,${al})`;c.lineWidth=2;c.beginPath()
       let cx=a.x*T+T/2,cy=a.y*T+T/2;c.moveTo(cx,cy)
-      for(let i=0;i<=3;i++){cx+=a.dx*T;cy+=a.dy*T;c.lineTo(cx,cy)};c.stroke()
+      const steps=(a.rng||3)
+      for(let i=0;i<steps;i++){cx+=a.dx*T;cy+=a.dy*T;c.lineTo(cx,cy)};c.stroke()
     }else if(a.tp==='aoe'){
+      const aoeR=(a.rng||1)
+      for(let ox=-(aoeR);ox<=aoeR;ox++)
+        for(let oy=-(aoeR);oy<=aoeR;oy++){
+          if(ox===0&&oy===0) continue
+          c.strokeStyle=`rgba(255,120,30,${al*0.6})`;c.lineWidth=2
+          c.strokeRect((a.x+ox)*T+2,(a.y+oy)*T+2,T-4,T-4)
+        }
       c.strokeStyle=`rgba(255,120,30,${al})`;c.lineWidth=3
       c.beginPath();c.arc(sx,sy,8+age/12,0,Math.PI*2);c.stroke()
     }
@@ -264,8 +387,8 @@ function render(){
     if(keys['s']||keys['arrowdown'])dy+=1
     if(keys['a']||keys['arrowleft'])dx-=1
     if(keys['d']||keys['arrowright'])dx+=1
+    if(dx||dy){ldx=dx>0?1:dx<0?-1:0;ldy=dy>0?1:dy<0?-1:0}
     if(dx||dy){
-      ldx=dx>0?1:dx<0?-1:0;ldy=dy>0?1:dy<0?-1:0
       const mag=(Math.abs(dx)+Math.abs(dy))>1?0.707:1,sp=1.8*mag
       const nx=clX*T+T/2+subX+dx*sp,ny=clY*T+T/2+subY+dy*sp
       const tx=Math.floor(nx/T),ty=Math.floor(ny/T)
@@ -290,10 +413,11 @@ function render(){
       }
     }
   }
-  if(keys['j']&&ws&&ws.readyState===WebSocket.OPEN&&n-lastAtk>500){
+  if(keys['j']&&ws&&ws.readyState===WebSocket.OPEN&&n-lastAtk>1200){
     const at=player.equippedWeapon?.attackType||'melee'
+    const rng=player.equippedWeapon?.range||1
     ws.send(JSON.stringify({action:'attack',data:JSON.stringify({dx:ldx,dy:ldy}),token:sessionStorage.getItem('token')}))
-    atkFx.push({x:clX,y:clY,dx:ldx,dy:ldy,tp:at,t:n})
+    atkFx.push({x:clX,y:clY,dx:ldx,dy:ldy,tp:at,rng:rng,t:n})
     lastAtk=n;keys['j']=false
   }
   aid=requestAnimationFrame(render)
@@ -303,6 +427,19 @@ function useItem(it:any){ws?.send(JSON.stringify({action:'use',data:it.name,toke
 function dropItem(it:any){ws?.send(JSON.stringify({action:'drop',data:it.name,token:sessionStorage.getItem('token')}))}
 function equip(it:any){ws?.send(JSON.stringify({action:'equip',data:it.name,token:sessionStorage.getItem('token')}))}
 function unequip(s:string){ws?.send(JSON.stringify({action:s==='w'?'unequipW':'unequipA',data:null,token:sessionStorage.getItem('token')}))}
+
+function openGm(){showGm.value=!showGm.value;showBag.value=false}
+function doGmAuth(){
+  gmError.value=''
+  if(!gmInput.value){gmError.value='请输入密钥';return}
+  ws?.send(JSON.stringify({action:'gm_auth',data:gmInput.value,token:sessionStorage.getItem('token')}))
+}
+function gmSpawn(t:string){
+  ws?.send(JSON.stringify({action:'gm_spawn',data:JSON.stringify({itemName:gmItem.value,target:t}),token:sessionStorage.getItem('token')}))
+}
+function gmHeal(){
+  ws?.send(JSON.stringify({action:'gm_heal',data:null,token:sessionStorage.getItem('token')}))
+}
 
 function connect(){
   const tk=sessionStorage.getItem('token')
@@ -326,9 +463,9 @@ function connect(){
         Object.assign(player,p.data)
         srvX=p.data.posX||1;srvY=p.data.posY||1
         if(p.data.currentRoomName!==or){
-          clX=srvX;clY=srvY;subX=0;subY=0
+          clX=srvX;clY=srvY;subX=0;subY=0;ldx=1;ldy=0
         }else if(Math.abs(clX-srvX)>2||Math.abs(clY-srvY)>2){
-          clX=srvX;clY=srvY;subX=0;subY=0
+          clX=srvX;clY=srvY;subX=0;subY=0;ldx=1;ldy=0
         }
       }else if(p.type==='roomPush'){
         if(p.data&&p.data.players){
@@ -342,6 +479,9 @@ function connect(){
           }
         }
         Object.assign(room,p.data)
+      }else if(p.type==='gmAuth'){
+        if(p.data==='ok'){gmAuthed.value=true;gmError.value='';gmInput.value=''}
+        else{gmError.value='密钥错误';gmAuthed.value=false}
       }else if(p.type==='messagePush'){
         const txt=p.data
         let cls=''
@@ -354,7 +494,7 @@ function connect(){
             // broadcast: parse and render attack FX
             const parts=txt.substring(4).split(',')
             if(parts.length>=4){
-              atkFx.push({x:parseInt(parts[0]),y:parseInt(parts[1]),dx:parseInt(parts[2]),dy:parseInt(parts[3]),tp:parts[4]||'melee',t:Date.now()})
+          atkFx.push({x:parseInt(parts[0]),y:parseInt(parts[1]),dx:parseInt(parts[2]),dy:parseInt(parts[3]),tp:parts[4]||'melee',rng:parseInt(parts[5])||1,t:Date.now()})
             }
           } else pushMsg(txt)
         }
@@ -383,6 +523,7 @@ onMounted(()=>{
     keys[e.key.toLowerCase()]=true
     if(e.key===' '){e.preventDefault();if(ws?.readyState===WebSocket.OPEN) ws.send(JSON.stringify({action:'interact',data:null,token:sessionStorage.getItem('token')}))}
     if(e.key==='i'){e.preventDefault();showBag.value=!showBag.value}
+    if(e.key==='h'){e.preventDefault();showHelp.value=!showHelp.value;showBag.value=false}
     if(e.key==='F5'){e.preventDefault();ws?.send(JSON.stringify({action:'command',data:'save',token:sessionStorage.getItem('token')}))}
     if(e.key==='F9'){e.preventDefault();ws?.send(JSON.stringify({action:'command',data:'load',token:sessionStorage.getItem('token')}))}
   })
@@ -400,8 +541,6 @@ onUnmounted(()=>{
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
-
 .game-root{width:100vw;height:100vh;background:#030308;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;font-family:'VT323',monospace;image-rendering:pixelated;}
 
 .loading{display:flex;flex-direction:column;align-items:center;gap:12px;z-index:100;}
@@ -455,6 +594,7 @@ onUnmounted(()=>{
 .eq-slot:hover{border-color:#666;}
 .eq-slot.filled{border-color:#604020;}
 .eq-slot.bag-btn{border-color:#444;}
+.eq-slot.gm-btn{border-color:#6200ea;opacity:.8;}.eq-slot.gm-btn:hover{border-color:#a0f;opacity:1;}
 .eq-icon{font-size:20px;margin-bottom:2px;}
 .eq-label{color:#666;font-size:9px;letter-spacing:1px;text-transform:uppercase;}
 .eq-name{color:#ccc;font-size:10px;text-align:center;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}

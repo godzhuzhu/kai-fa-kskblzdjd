@@ -19,6 +19,7 @@ public class BerserkerTotem extends AbstractItem implements IPlayerListener {
 
     public BerserkerTotem() {
         super("BerserkerTotem", "狂战士图腾", "激发怒火的图腾 (受伤后+8攻击持续12秒)", 5);
+        setPassiveEffect(true);
     }
 
     @Override
@@ -30,7 +31,9 @@ public class BerserkerTotem extends AbstractItem implements IPlayerListener {
     @Override
     public void droppedBy(Player player) {
         player.removeListener(this);
-        active.set(false);
+        if (active.compareAndSet(true, false)) {
+            player.setAttack(player.getAttack() - 8);
+        }
         this.owner = null;
     }
 

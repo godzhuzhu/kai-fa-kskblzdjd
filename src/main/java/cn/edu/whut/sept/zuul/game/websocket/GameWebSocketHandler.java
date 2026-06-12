@@ -443,7 +443,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     }
 
     private void handleGmAuth(GameSession gs, String secret) {
-        boolean ok = "gm123".equals(secret);
+        boolean ok = gmSecret.equals(secret);
         if (ok) {
             gmSessions.put(gs.getWebSocketSession().getId(), true);
         }
@@ -497,16 +497,31 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         return Boolean.TRUE.equals(gmSessions.get(gs.getWebSocketSession().getId()));
     }
 
-    private void handlePlayerDeath(Player dead, Room room) {
+        private void handlePlayerDeath(Player dead, Room room) {
         if (dead.getEquippedWeapon() != null) dead.unequipWeapon();
         if (dead.getEquippedArmor() != null) dead.unequipArmor();
+        int[][] offsets = {{0,0},{0,1},{0,-1},{1,0},{-1,0},{1,1},{1,-1},{-1,1},{-1,-1}};
+        int baseX = dead.getPosX(), baseY = dead.getPosY();
+        int idx = 0;
         for (AbstractItem item : new ArrayList<>(dead.getBag())) {
             dead.dropItem(item);
-            room.placeItem(item, dead.getPosX(), dead.getPosY());
+            int tx = baseX, ty = baseY;
+            boolean placed = false;
+            for (int attempt = 0; attempt < offsets.length; attempt++) {
+                int ox = idx % offsets.length;
+                tx = baseX + offsets[ox][0];
+                ty = baseY + offsets[ox][1];
+                idx++;
+                if (room.isPlaceable(tx, ty)) {
+                    placed = true;
+                    break;
+                }
+            }
+            if (!placed) { tx = baseX; ty = baseY; }
+            room.placeItem(item, tx, ty);
         }
     }
-
-    private void respawnDeadPlayer(Player dead) {
+private void respawnDeadPlayer(Player dead) {
         dead.setCurrentHealth(dead.getMaxHealth());
         dead.setAttack(10);
         dead.setDefense(5);

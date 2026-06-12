@@ -37,15 +37,15 @@ public class PlayerVO {
         vo.posY = p.getPosY();
         vo.bag = new ArrayList<>();
         for (AbstractItem i : p.getBag()) {
-            vo.bag.add(new BagItemVO(i.getName(), i.getWeight(), i.getAttackRange(), i.getAttackType(), i.isConsumable()));
+            vo.bag.add(new BagItemVO(i.getName(), i.getDisplayName(), i.getDescription(), i.getWeight(), i.getAttackRange(), i.getAttackType(), i.isConsumable()));
         }
         if (p.getEquippedWeapon() != null) {
             AbstractItem w = p.getEquippedWeapon();
-            vo.equippedWeapon = new BagItemVO(w.getName(), w.getWeight(), w.getAttackRange(), w.getAttackType(), false);
+            vo.equippedWeapon = new BagItemVO(w.getName(), w.getDisplayName(), w.getDescription(), w.getWeight(), w.getAttackRange(), w.getAttackType(), false);
         }
         if (p.getEquippedArmor() != null) {
             AbstractItem a = p.getEquippedArmor();
-            vo.equippedArmor = new BagItemVO(a.getName(), a.getWeight(), a.getAttackRange(), a.getAttackType(), false);
+            vo.equippedArmor = new BagItemVO(a.getName(), a.getDisplayName(), a.getDescription(), a.getWeight(), a.getAttackRange(), a.getAttackType(), false);
         }
         return vo;
     }

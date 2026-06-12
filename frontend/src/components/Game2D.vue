@@ -45,13 +45,13 @@
         <div class="eq-slot" @click="unequip('w')" :class="{filled:player.equippedWeapon}">
           <span class="eq-icon">{{ player.equippedWeapon ? '⚔' : '▢' }}</span>
           <span class="eq-label">武器</span>
-          <span class="eq-name" v-if="player.equippedWeapon">{{ player.equippedWeapon.name }}</span>
+          <span class="eq-name" v-if="player.equippedWeapon">{{ player.equippedWeapon.displayName || player.equippedWeapon.name }}</span>
           <span class="eq-name dim" v-else>空</span>
         </div>
         <div class="eq-slot" @click="unequip('a')" :class="{filled:player.equippedArmor}">
           <span class="eq-icon">{{ player.equippedArmor ? '🛡' : '▢' }}</span>
           <span class="eq-label">防具</span>
-          <span class="eq-name" v-if="player.equippedArmor">{{ player.equippedArmor.name }}</span>
+          <span class="eq-name" v-if="player.equippedArmor">{{ player.equippedArmor.displayName || player.equippedArmor.name }}</span>
           <span class="eq-name dim" v-else>空</span>
         </div>
         <div class="eq-slot bag-btn gm-btn" @click="openGm()">
@@ -93,7 +93,7 @@
           <div v-for="item in player.bag" :key="item.name" class="inv-row" :class="{isWpn:item.range>0,isArm:item.weight>=1&&!item.range}">
             <span class="inv-icon">{{ item.range>0?'⚔':item.weight>=1?'🛡':'♨' }}</span>
             <div class="inv-mid">
-              <div class="inv-name">{{ item.name }}</div>
+              <div class="inv-name">{{ item.displayName || item.name }}</div>
               <div class="inv-desc" v-html="itemDesc(item)"></div>
             </div>
             <div class="inv-btns">
@@ -237,6 +237,7 @@ const HELP_ITEMS=[
   {n:'Pas_PhoenixFeather',in:'PhoenixFeather',name:'凤凰羽毛',tag:'被动',r:6,desc:'死亡时复活, 恢复50%HP'},
 ]
 function itemDesc(it:any){
+  if (it.description) return it.description;
   const r=RARITY[it.name]||1
   const stars='★'.repeat(r)+'☆'.repeat(6-r)
   const tp=it.range>0?it.type+' rng '+it.range:it.consumable?'consumable':'armor'
@@ -314,7 +315,7 @@ function render(){
         c.beginPath();c.arc(px,py+bob,8,0,Math.PI*2);c.fill()
         c.fillStyle='#000';c.font='bold 10px monospace'
         c.textAlign='center';c.textBaseline='middle'
-        c.fillText(String(it.name||'?').substring(0,2),px,py+bob)
+        c.fillText(String(it.displayName||it.name||'?').substring(0,2),px,py+bob)
       }
     }
   }

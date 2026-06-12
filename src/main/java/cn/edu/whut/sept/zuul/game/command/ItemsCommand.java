@@ -16,7 +16,7 @@ public class ItemsCommand extends Command {
             sb.append("空");
         } else {
             for (AbstractItem item : player.getBag()) {
-                sb.append(item.getName()).append("(").append(item.getWeight()).append("kg) ");
+                sb.append(item.getDisplayName()).append("(").append(item.getWeight()).append("kg) ");
             }
             sb.append("| 负重: ").append(player.getCurrentLoad())
               .append("/").append(player.getMaxCapacity());

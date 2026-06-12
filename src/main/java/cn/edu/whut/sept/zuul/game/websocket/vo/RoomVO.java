@@ -29,6 +29,8 @@ public class RoomVO {
         for (AbstractItem item : r.getItems()) {
             Map<String, Object> itemData = new HashMap<>();
             itemData.put("name", item.getName());
+            itemData.put("displayName", item.getDisplayName());
+            itemData.put("description", item.getDescription());
             itemData.put("weight", item.getWeight());
             itemData.put("range", item.getAttackRange());
             itemData.put("type", item.getAttackType());

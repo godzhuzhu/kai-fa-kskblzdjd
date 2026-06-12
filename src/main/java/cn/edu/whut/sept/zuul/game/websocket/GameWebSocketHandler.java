@@ -198,10 +198,10 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             if (item.getName().equals(itemName)) {
                 if (item.isWeapon()) {
                     player.equipWeapon(item);
-                    messagePush(player, "装备了 " + itemName + "。");
+                    messagePush(player, "装备了 " + item.getDisplayName() + "。");
                 } else {
                     player.equipArmor(item);
-                    messagePush(player, "装备了 " + itemName + " 防具。");
+                    messagePush(player, "装备了 " + item.getDisplayName() + " 防具。");
                 }
                 playerPush(player);
                 return;
@@ -276,7 +276,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 currentRoom.placeItem(item, px, py);
                 messagePush(player, "背包已满，无法拾取！");
             } else if (player.takeItem(item)) {
-                messagePush(player, "你拾取了 " + item.getName() + "。");
+                messagePush(player, "你拾取了 " + item.getDisplayName() + "。");
             }
         }
         playerPush(player);
@@ -302,7 +302,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                 }
                 if (!placed) room.placeItem(item, x, y);
                 if (dropped) {
-                    messagePush(player, "你丢掉了 " + itemName + "。");
+                    messagePush(player, "你丢掉了 " + item.getDisplayName() + "。");
                 }
                 break;
             }
@@ -316,11 +316,11 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
         for (AbstractItem item : player.getBag()) {
             if (item.getName().equals(itemName)) {
                 if (item.isWeapon()) {
-                    messagePush(player, itemName + " 是武器，请拾取后装备。");
+                    messagePush(player, item.getDisplayName() + " 是武器，请拾取后装备。");
                     return;
                 }
                 player.useItem(item);
-                messagePush(player, "使用了 " + itemName + "。");
+                messagePush(player, "使用了 " + item.getDisplayName() + "。");
                 break;
             }
         }

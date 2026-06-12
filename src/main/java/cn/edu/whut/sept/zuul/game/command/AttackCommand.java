@@ -64,7 +64,7 @@ public class AttackCommand extends Command {
         }
         player.setLastAttackTime(now);
 
-        int damage = Math.max(1, player.getAttack() - target.getDefense());
+        int damage = Math.max(Math.max(3, player.getAttack() / 5), player.getAttack() - target.getDefense());
         target.hurtBy(damage);
         AttackEvent attackEvent = new AttackEvent(player, target, damage);
         player.notifyHurt(attackEvent);
@@ -123,6 +123,12 @@ public class AttackCommand extends Command {
         killer.setMaxHealth(killer.getMaxHealth() + 10);
         killer.setCurrentHealth(Math.min(killer.getCurrentHealth() + 10, killer.getMaxHealth()));
         killer.setAttack(killer.getAttack() + 2);
+        killer.setKills(killer.getKills() + 1);
+
+        GameWebSocketHandler handler = game.getWebSocketHandler();
+        if (handler != null) {
+            handler.broadcastRankings();
+        }
 
         game.getMessageBridge().send(
                 new SinglePlayerMessage("你击败了 " + victim.getPlayerName() + "！+2 ATK, +10 MaxHP"), killer);

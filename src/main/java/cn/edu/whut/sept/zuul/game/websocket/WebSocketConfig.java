@@ -59,8 +59,10 @@ public class WebSocketConfig implements WebSocketConfigurer {
         game.getWebSocketHandler().checkHeartbeats();
     }
 
-    @Scheduled(fixedRate = 45000)
-    public void respawnItems() {
-        game.respawnItems();
+    @Scheduled(fixedRate = 600000)
+    public void roundReset() {
+        game.resetAllPlayers();
+        game.rerollAllItems();
+        game.getWebSocketHandler().broadcastRoundReset();
     }
 }

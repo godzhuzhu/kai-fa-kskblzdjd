@@ -21,6 +21,7 @@ public class PlayerVO {
     private int posY;
     private BagItemVO equippedWeapon;
     private BagItemVO equippedArmor;
+    private int kills;
 
     public static PlayerVO from(Player p) {
         PlayerVO vo = new PlayerVO();
@@ -35,6 +36,7 @@ public class PlayerVO {
         vo.currentRoomName = p.getCurrentRoom().getName();
         vo.posX = p.getPosX();
         vo.posY = p.getPosY();
+        vo.kills = p.getKills();
         vo.bag = new ArrayList<>();
         for (AbstractItem i : p.getBag()) {
             vo.bag.add(new BagItemVO(i.getName(), i.getDisplayName(), i.getDescription(), i.getWeight(), i.getAttackRange(), i.getAttackType(), i.isConsumable()));
@@ -78,4 +80,6 @@ public class PlayerVO {
     public void setEquippedWeapon(BagItemVO w) { this.equippedWeapon = w; }
     public BagItemVO getEquippedArmor() { return equippedArmor; }
     public void setEquippedArmor(BagItemVO a) { this.equippedArmor = a; }
+    public int getKills() { return kills; }
+    public void setKills(int kills) { this.kills = kills; }
 }

@@ -40,6 +40,9 @@ public class PhoenixFeather extends AbstractItem implements IPlayerListener {
             player.setCurrentHealth(player.getMaxHealth() / 2);
             player.removeListener(this);
             player.removeFromBag(this);
+            if (player.getEquippedArmor() == this) {
+                player.discardArmor();
+            }
         }
     }
 

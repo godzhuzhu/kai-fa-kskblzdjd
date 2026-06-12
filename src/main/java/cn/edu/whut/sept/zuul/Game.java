@@ -251,6 +251,39 @@ public class Game {
         return playerMap;
     }
 
+    public void resetAllPlayers() {
+        Room spawnRoom = startingRoom;
+        int[] sp = spawnRoom.getSpawnPoint();
+        for (Player p : playerMap.values()) {
+            p.setAttack(10);
+            p.setDefense(5);
+            p.setMaxHealth(100);
+            p.setCurrentHealth(100);
+            p.getPreviousRooms().clear();
+            p.moveTo(spawnRoom);
+            p.setPosX(sp[0]);
+            p.setPosY(sp[1]);
+            p.setMaxCapacity(50);
+            if (p.getEquippedWeapon() != null) p.unequipWeapon();
+            if (p.getEquippedArmor() != null) p.unequipArmor();
+            List<cn.edu.whut.sept.zuul.game.item.AbstractItem> toDrop = new ArrayList<>(p.getBag());
+            for (cn.edu.whut.sept.zuul.game.item.AbstractItem item : toDrop) {
+                p.dropItem(item);
+            }
+            p.getListeners().clear();
+        }
+    }
+
+    public void rerollAllItems() {
+        for (Room room : allRooms) {
+            room.removeAllItems();
+            int count = (int) (Math.random() * 3) + 1;
+            for (int i = 0; i < count; i++) {
+                room.addItem(Items.generateRandomItem());
+            }
+        }
+    }
+
     public GameWebSocketHandler getWebSocketHandler() {
         return webSocketHandler;
     }

@@ -169,6 +169,14 @@ public class Room {
         return null;
     }
 
+    /** 清空房间内所有物品 */
+    public void removeAllItems() {
+        synchronized (items) {
+            items.clear();
+            itemSpawns.clear();
+        }
+    }
+
     /**
      * 随机生成 0~2 件物品到房间。
      */

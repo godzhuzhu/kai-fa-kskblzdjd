@@ -47,7 +47,7 @@ public class BerserkerTotem extends AbstractItem implements IPlayerListener {
             active.set(true);
             player.setAttack(player.getAttack() + 8);
             SCHEDULER.schedule(() -> {
-                if (active.get() && player.getBag().contains(this)) {
+                if (active.get() && (player.getBag().contains(this) || player.getEquippedArmor() == this)) {
                     synchronized (player) {
                         if (active.compareAndSet(true, false)) {
                             player.setAttack(player.getAttack() - 8);

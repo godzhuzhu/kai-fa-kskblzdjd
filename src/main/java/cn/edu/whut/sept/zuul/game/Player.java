@@ -54,6 +54,9 @@ public class Player {
     private final List<IPlayerListener> listeners;
     private long lastAttackTime;
 
+    // 击杀计数
+    private int kills;
+
     public Player(int userId, String playerName, Room startingRoom) {
         this.userId = userId;
         this.playerName = playerName;
@@ -173,14 +176,16 @@ public class Player {
     }
 
     public boolean equipArmor(AbstractItem item) {
-        if (item.isWeapon()) return false;
+        if (item.isWeapon() || item.isConsumable()) return false;
         if (item.getWeight() < 1) return false;
         synchronized (bag) {
             if (!bag.contains(item)) return false;
             if (equippedArmor != null) unequipArmor();
             bag.remove(item);
             equippedArmor = item;
-            item.takenBy(this);
+            if (!item.isPassiveEffect()) {
+                item.takenBy(this);
+            }
         }
         return true;
     }
@@ -188,10 +193,21 @@ public class Player {
     public void unequipArmor() {
         if (equippedArmor == null) return;
         synchronized (bag) {
-            equippedArmor.droppedBy(this);
+            if (!equippedArmor.isPassiveEffect()) {
+                equippedArmor.droppedBy(this);
+            }
             bag.add(equippedArmor);
             equippedArmor = null;
         }
+    }
+
+    /** 销毁防具槽物品（不掉落不回包） */
+    public void discardArmor() {
+        if (equippedArmor == null) return;
+        if (!equippedArmor.isPassiveEffect()) {
+            equippedArmor.droppedBy(this);
+        }
+        equippedArmor = null;
     }
 
     // ========== 移动 ==========
@@ -315,4 +331,7 @@ public class Player {
     public void setPosX(int posX) { this.posX = posX; }
     public int getPosY() { return posY; }
     public void setPosY(int posY) { this.posY = posY; }
+
+    public int getKills() { return kills; }
+    public void setKills(int kills) { this.kills = kills; }
 }

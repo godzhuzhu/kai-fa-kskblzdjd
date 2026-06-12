@@ -43,7 +43,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     private final RedisPubSubService redisPubSubService;
 
     private final String gmSecret;
-    private final Map<String, Boolean> gmSessions = new HashMap<>();
+    private final Map<String, Boolean> gmSessions = new ConcurrentHashMap<>();
 
     public GameWebSocketHandler(Game game, JwtUtil jwtUtil, GameMessageBridge messageBridge,
                                 RedisSessionManager redisSessionManager, RedisPubSubService redisPubSubService,
@@ -371,7 +371,7 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
     private boolean hitPlayer(Player attacker, Room room, int tx, int ty, int damage) {
         for (Player p : getPlayersInRoom(room, attacker)) {
             if (p.getPosX() == tx && p.getPosY() == ty) {
-                int dmg = Math.max(1, damage - p.getDefense());
+                int dmg = Math.max(Math.max(3, damage / 5), damage - p.getDefense());
 
                 int targetAtkBefore = p.getAttack();
                 int attackerDefBefore = attacker.getDefense();
@@ -402,15 +402,30 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                         roomPush(room);
                     } else {
                         handlePlayerDeath(p, room);
-                        respawnDeadPlayer(p);
+                        Room spawnRoom = game.getStartingRoom();
+                        p.setCurrentHealth(p.getMaxHealth());
+                        p.setAttack(10);
+                        p.setDefense(5);
+                        Room deathRoom = p.getCurrentRoom();
+                        p.getPreviousRooms().clear();
+                        p.moveTo(spawnRoom);
+                        int[] sp = spawnRoom.getSpawnPoint();
+                        p.setPosX(sp[0]);
+                        p.setPosY(sp[1]);
+                        onPlayerMoved(p, deathRoom.getName());
+                        playerPush(p);
+                        roomPush(deathRoom);
+                        roomPush(spawnRoom);
+                        FightWinEvent winEvent = new FightWinEvent(attacker, p);
+                        attacker.notifyFightWin(winEvent);
+                        attacker.setMaxHealth(attacker.getMaxHealth() + 10);
+                        attacker.setCurrentHealth(Math.min(attacker.getCurrentHealth() + 10, attacker.getMaxHealth()));
+                        attacker.setAttack(attacker.getAttack() + 2);
+                        attacker.setKills(attacker.getKills() + 1);
+                        messagePush(attacker, "你击败了 " + p.getPlayerName() + "！+2攻击 +10生命");
+                        broadcastRankings();
+                        playerPush(attacker);
                     }
-                    FightWinEvent winEvent = new FightWinEvent(attacker, p);
-                    attacker.notifyFightWin(winEvent);
-                    attacker.setMaxHealth(attacker.getMaxHealth() + 10);
-                    attacker.setCurrentHealth(Math.min(attacker.getCurrentHealth() + 10, attacker.getMaxHealth()));
-                    attacker.setAttack(attacker.getAttack() + 2);
-                    messagePush(attacker, "你击败了 " + p.getPlayerName() + "！+2攻击 +10生命");
-                    playerPush(attacker);
                 } else {
                     playerPush(attacker);
                     playerPush(p);
@@ -425,15 +440,31 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
                         roomPush(room);
                     } else {
                         handlePlayerDeath(attacker, room);
-                        respawnDeadPlayer(attacker);
+                        Room spawnRoomA = game.getStartingRoom();
+                        attacker.setCurrentHealth(attacker.getMaxHealth());
+                        attacker.setAttack(10);
+                        attacker.setDefense(5);
+                        Room deathRoomA = attacker.getCurrentRoom();
+                        attacker.getPreviousRooms().clear();
+                        attacker.moveTo(spawnRoomA);
+                        int[] spA = spawnRoomA.getSpawnPoint();
+                        attacker.setPosX(spA[0]);
+                        attacker.setPosY(spA[1]);
+                        onPlayerMoved(attacker, deathRoomA.getName());
+                        playerPush(attacker);
+                        roomPush(deathRoomA);
+                        roomPush(spawnRoomA);
+                        FightWinEvent winEventA = new FightWinEvent(p, attacker);
+                        p.notifyFightWin(winEventA);
+                        p.setMaxHealth(p.getMaxHealth() + 10);
+                        p.setCurrentHealth(Math.min(p.getCurrentHealth() + 10, p.getMaxHealth()));
+                        p.setAttack(p.getAttack() + 2);
+                        p.setKills(p.getKills() + 1);
+                        messagePush(p, "你击败了 " + attacker.getPlayerName() + "！+2攻击 +10生命");
+                        broadcastRankings();
+                        playerPush(attacker);
+                        playerPush(p);
                     }
-                    FightWinEvent winEventA = new FightWinEvent(p, attacker);
-                    p.notifyFightWin(winEventA);
-                    p.setMaxHealth(p.getMaxHealth() + 10);
-                    p.setCurrentHealth(Math.min(p.getCurrentHealth() + 10, p.getMaxHealth()));
-                    p.setAttack(p.getAttack() + 2);
-                    messagePush(p, "你击败了 " + attacker.getPlayerName() + "！+2攻击 +10生命");
-                    playerPush(p);
                 }
 
                 return true;
@@ -521,23 +552,6 @@ public class GameWebSocketHandler extends TextWebSocketHandler {
             room.placeItem(item, tx, ty);
         }
     }
-private void respawnDeadPlayer(Player dead) {
-        dead.setCurrentHealth(dead.getMaxHealth());
-        dead.setAttack(10);
-        dead.setDefense(5);
-        dead.getPreviousRooms().clear();
-        Room oldRoom = dead.getCurrentRoom();
-        String oldRoomName = oldRoom.getName();
-        Room spawnRoom = game.getStartingRoom();
-        dead.moveTo(spawnRoom);
-        int[] sp = spawnRoom.getSpawnPoint();
-        dead.setPosX(sp[0]);
-        dead.setPosY(sp[1]);
-        onPlayerMoved(dead, oldRoomName);
-        playerPush(dead);
-        roomPush(oldRoom);
-        roomPush(spawnRoom);
-    }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
@@ -613,6 +627,33 @@ private void respawnDeadPlayer(Player dead) {
     public void broadcastLocal(WebSocketOutgoingPayload payload) {
         for (GameSession session : sessions.values()) {
             sendToSession(session.getWebSocketSession(), payload);
+        }
+    }
+
+    public void broadcastRoundReset() {
+        for (Room room : game.getAllRooms()) {
+            roomPush(room);
+        }
+        for (Player p : game.getAllPlayers().values()) {
+            if (p.isOnline()) playerPush(p);
+        }
+        broadcastLocal(new WebSocketOutgoingPayload("roundReset", ""));
+    }
+
+    public void broadcastRankings() {
+        List<Map<String, Object>> rankings = new ArrayList<>();
+        for (Player p : game.getAllPlayers().values()) {
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("userId", p.getUserId());
+            entry.put("playerName", p.getPlayerName());
+            entry.put("kills", p.getKills());
+            rankings.add(entry);
+        }
+        rankings.sort((a, b) -> Integer.compare((int)b.get("kills"), (int)a.get("kills")));
+        try {
+            String json = objectMapper.writeValueAsString(rankings);
+            broadcastLocal(new WebSocketOutgoingPayload("rankings", json));
+        } catch (Exception ignored) {
         }
     }
 

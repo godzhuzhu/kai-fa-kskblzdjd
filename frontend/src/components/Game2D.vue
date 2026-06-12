@@ -11,6 +11,17 @@
     <canvas ref="canvas" class="game-canvas" :style="{display:connected?'block':'none'}"></canvas>
 
     <div class="hud-layer" v-if="connected">
+      <div class="rank-panel">
+        <div class="rank-title">⚔ 击杀排行</div>
+        <div class="rank-list">
+          <div v-for="(r,i) in rankings" :key="r.userId" class="rank-row" :class="{me:r.userId===player.userId}">
+            <span class="rank-idx" :class="{top1:i===0,top2:i===1,top3:i===2}">{{ i+1 }}</span>
+            <span class="rank-name">{{ r.playerName }}</span>
+            <span class="rank-kills">{{ r.kills }}杀</span>
+          </div>
+          <div v-if="!rankings||rankings.length===0" class="rank-empty">暂无击杀</div>
+        </div>
+      </div>
       <div class="hud-tl">
         <div class="player-name-tag">{{ player.playerName || 'Player' }}</div>
         <div class="hp-bar-bg">
@@ -24,6 +35,7 @@
       </div>
 
       <div class="hud-tr">
+        <div class="round-timer" :class="{warn:roundTime<60}">下一轮 {{ roundDisplay }}</div>
         <div class="minimap" v-if="room.tiles">
           <div v-for="(row,y) in room.tiles" :key="y" class="mm-row">
             <div v-for="(tile,x) in row" :key="x" class="mm-cell" :class="{
@@ -190,7 +202,10 @@ const gmAuthed=ref(false)
 const gmInput=ref('')
 const gmError=ref('')
 const gmItem=ref('')
+const rankings=ref<any[]>([])
 const hpPct=computed(()=>Math.max(0,(player.currentHealth/(player.maxHealth||100))*100))
+const roundTime=ref(600)
+const roundDisplay=computed(()=>{const m=Math.floor(roundTime.value/60),s=roundTime.value%60;return `${m}:${s.toString().padStart(2,'0')}`})
 
 const RARITY:Record<string,number>={Sword:1,BloodVial:1,HealthPotion:1,MagicCookie:1,StonehideElixir:2,DragonscaleBulwark:2,SpeedBoots:2,StormCleaver:3,FrostBow:3,WarHammer:3,VampireFang:4,BloodDagger:4,ThornArmor:4,BerserkerTotem:5,ShadowbaneBallista:5,ImmortalCore:6,PhoenixFeather:6}
 const RCOLOR:Record<number,string>={1:'#aaa',2:'#4fc3f7',3:'#a4e',4:'#ff8c00',5:'#f66',6:'#ff0'}
@@ -263,6 +278,7 @@ let dust:{x:number,y:number,s:number,a:number}[]=[]
 let rmtP:{[uid:number]:{cx:number,cy:number,tx:number,ty:number}}={}
 let hbTimer:ReturnType<typeof setInterval>|null=null
 let reconTimer:ReturnType<typeof setTimeout>|null=null
+let roundTimer:ReturnType<typeof setInterval>|null=null
 let reconAttempts=0
 const MAX_RECON=10
 let dmgNums:{x:number,y:number,val:number,h:number,t:number}[]=[]
@@ -414,10 +430,9 @@ function render(){
     }
   }
   if(keys['j']&&ws&&ws.readyState===WebSocket.OPEN&&n-lastAtk>1200){
-    const at=player.equippedWeapon?.attackType||'melee'
+    const at=player.equippedWeapon?.type||'melee'
     const rng=player.equippedWeapon?.range||1
     ws.send(JSON.stringify({action:'attack',data:JSON.stringify({dx:ldx,dy:ldy}),token:sessionStorage.getItem('token')}))
-    atkFx.push({x:clX,y:clY,dx:ldx,dy:ldy,tp:at,rng:rng,t:n})
     lastAtk=n;keys['j']=false
   }
   aid=requestAnimationFrame(render)
@@ -449,20 +464,24 @@ function connect(){
   ws.onopen=()=>{
     connected.value=true
     reconAttempts=0
+    roundTime.value=600
     if(hbTimer) clearInterval(hbTimer)
     hbTimer=setInterval(()=>{
       if(ws?.readyState===WebSocket.OPEN)
         ws.send(JSON.stringify({action:'heartbeat',data:null,token:sessionStorage.getItem('token')}))
     },30000)
+    if(roundTimer) clearInterval(roundTimer)
+    roundTimer=setInterval(()=>{if(roundTime.value>0)roundTime.value--},1000)
   }
   ws.onmessage=(e)=>{
     try{
       const p=JSON.parse(e.data)
       if(p.type==='playerPush'){
         const or=player.currentRoomName
+        const wasDead=player.currentHealth<=0
         Object.assign(player,p.data)
         srvX=p.data.posX||1;srvY=p.data.posY||1
-        if(p.data.currentRoomName!==or){
+        if(p.data.currentRoomName!==or || wasDead){
           clX=srvX;clY=srvY;subX=0;subY=0;ldx=1;ldy=0
         }else if(Math.abs(clX-srvX)>2||Math.abs(clY-srvY)>2){
           clX=srvX;clY=srvY;subX=0;subY=0;ldx=1;ldy=0
@@ -482,6 +501,11 @@ function connect(){
       }else if(p.type==='gmAuth'){
         if(p.data==='ok'){gmAuthed.value=true;gmError.value='';gmInput.value=''}
         else{gmError.value='密钥错误';gmAuthed.value=false}
+      }else if(p.type==='roundReset'){
+        roundTime.value=600
+        pushMsg('新的一轮开始！所有玩家已重置','kill')
+      }else if(p.type==='rankings'){
+        try{rankings.value=JSON.parse(p.data)}catch(e){}
       }else if(p.type==='messagePush'){
         const txt=p.data
         let cls=''
@@ -535,6 +559,7 @@ onUnmounted(()=>{
   cancelAnimationFrame(aid)
   if(hbTimer) clearInterval(hbTimer)
   if(reconTimer) clearTimeout(reconTimer)
+  if(roundTimer) clearInterval(roundTimer)
   ws?.close()
   keys={};hitFx=[];atkFx=[];dust=[];rmtP={};prevHp={}
 })
@@ -557,6 +582,19 @@ onUnmounted(()=>{
 .hud-layer{position:absolute;inset:0;pointer-events:none;z-index:10;}
 .hud-layer>*{pointer-events:auto;}
 
+/* Ranking Panel */
+.rank-panel{position:absolute;left:220px;top:12px;width:150px;max-height:70vh;background:rgba(0,0,0,.75);border:2px solid #444;border-radius:6px;padding:8px;overflow-y:auto;}
+.rank-title{color:#f0d060;font-size:12px;font-weight:700;letter-spacing:1px;text-align:center;margin-bottom:6px;text-shadow:0 0 6px rgba(240,208,96,.3);}
+.rank-list{display:flex;flex-direction:column;gap:2px;}
+.rank-row{display:flex;align-items:center;gap:6px;padding:3px 6px;border-radius:3px;font-size:11px;}
+.rank-row.me{background:rgba(240,208,96,.1);}
+.rank-idx{width:18px;text-align:center;color:#888;font-weight:700;}
+.rank-idx.top1{color:#ffd700}.rank-idx.top2{color:#c0c0c0}.rank-idx.top3{color:#cd7f32}
+.rank-name{flex:1;color:#ccc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.rank-row.me .rank-name{color:#f0d060;}
+.rank-kills{color:#ff7043;font-weight:700;}
+.rank-empty{color:#555;text-align:center;font-size:11px;padding:8px;}
+
 /* Top Left - HP & Stats */
 .hud-tl{position:absolute;top:12px;left:12px;display:flex;flex-direction:column;gap:6px;}
 .player-name-tag{color:#e0d0a0;font-size:14px;text-shadow:0 0 8px rgba(192,160,96,.3);letter-spacing:1px;text-transform:uppercase;}
@@ -571,6 +609,9 @@ onUnmounted(()=>{
 
 /* Top Right - Minimap */
 .hud-tr{position:absolute;top:12px;right:12px;display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+.round-timer{color:#ffd54f;font-size:14px;font-weight:700;letter-spacing:1px;text-shadow:0 0 8px rgba(255,213,79,.3);}
+.round-timer.warn{color:#f44336;text-shadow:0 0 12px rgba(244,67,54,.5);animation:pulse .5s infinite alternate;}
+@keyframes pulse{from{opacity:1}to{opacity:.5}}
 .minimap{width:75px;height:50px;border:2px solid #444;border-radius:3px;background:rgba(0,0,0,.8);overflow:hidden;display:flex;flex-direction:column;}
 .mm-row{display:flex;height:5px;}
 .mm-cell{flex:1;}

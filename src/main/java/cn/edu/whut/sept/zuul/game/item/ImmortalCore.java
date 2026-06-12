@@ -40,6 +40,9 @@ public class ImmortalCore extends AbstractItem implements IPlayerListener {
             player.setCurrentHealth(1);
             player.removeListener(this);
             player.removeFromBag(this);
+            if (player.getEquippedArmor() == this) {
+                player.discardArmor();
+            }
         }
     }
 
